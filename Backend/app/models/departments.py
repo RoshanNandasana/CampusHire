@@ -11,3 +11,5 @@ class Department(UUIDMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(100), unique=True)
 
     students = relationship("Student", back_populates="department")
+
+    tpo_coordinators = relationship("TPOCoordinator", back_populates="department")
