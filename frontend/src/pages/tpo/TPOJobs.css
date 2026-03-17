@@ -1,0 +1,73 @@
+.tpo-jobs {
+  padding: 0;
+  width: 100%;
+  margin: 0;
+}
+
+.header {
+  margin-bottom: 1.75rem;
+}
+
+.header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: var(--text-light);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  background-color: #f0f2f7;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table tbody tr:hover {
+  background-color: rgba(90, 119, 223, 0.08);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-info {
+  background-color: rgba(62, 83, 160, 0.15);
+  color: var(--primary-color);
+}
+
+.badge-success {
+  background-color: rgba(47, 191, 113, 0.18);
+  color: #1d8a52;
+}
+
+@media (max-width: 768px) {
+  .tpo-jobs {
+    padding: 0;
+  }
+
+  .table {
+    font-size: 0.9rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.75rem;
+  }
+}

@@ -1,0 +1,67 @@
+.card {
+  background-color: var(--surface-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(204, 212, 222, 0.55);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-strong);
+  transform: translateY(-3px);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem;
+  border-bottom: 1px solid rgba(204, 212, 222, 0.6);
+  background: linear-gradient(135deg, rgba(90, 119, 223, 0.08), rgba(62, 83, 160, 0.05));
+}
+
+.card-icon {
+  font-size: 1.4rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(62, 83, 160, 0.12);
+  color: var(--primary-color);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.card-content {
+  padding: 1.5rem;
+}
+
+/* Variants */
+.card.card-interactive {
+  cursor: pointer;
+}
+
+.card.card-interactive:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-strong);
+}
+
+.card.card-small {
+  padding: 1rem;
+}
+
+.card.card-small .card-content {
+  padding: 1rem;
+}
+
+.card.highlighted {
+  border-left: 4px solid var(--primary-color);
+}

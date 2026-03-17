@@ -1,33 +1,259 @@
-# Getting Started with Create React App
+# CampusHire Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React-based frontend application for the CampusHire campus placement system.
+
+## Tech Stack
+
+- **React 19.2.4** - UI library with functional components and hooks
+- **React Router v6.21.0** - Client-side routing
+- **Axios 1.6.5** - HTTP client with interceptors
+- **Context API** - Global state management
+- **Custom CSS** - Pure CSS with CSS variables (no Bootstrap/Tailwind)
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Build for production
+npm build
+
+# Run tests
+npm test
+```
+
+Frontend will run on: **http://localhost:3000**
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── common/              # Reusable components
+│   │   ├── Navbar.jsx       # Top navigation
+│   │   ├── Sidebar.jsx      # Side navigation
+│   │   ├── Footer.jsx       # Footer
+│   │   ├── Card.jsx         # Card container
+│   │   ├── Modal.jsx        # Modal dialog
+│   │   └── ProtectedRoute.jsx
+│   ├── student/             # Student components
+│   ├── tpo/                 # TPO components
+│   └── recruiter/           # Recruiter components
+│
+├── pages/
+│   ├── auth/                # Login & Register
+│   ├── student/             # 6 student pages
+│   ├── tpo/                 # 6 TPO pages
+│   └── recruiter/           # 5 recruiter pages
+│
+├── context/
+│   └── AuthContext.jsx      # Global auth state
+│
+├── services/
+│   └── api.js               # API integration
+│
+├── styles/
+│   └── global.css           # Global theme
+│
+├── App.jsx                  # Main router
+└── index.js                 # Entry point
+```
+
+## Key Features
+
+### Authentication
+- Location: `src/context/AuthContext.jsx`
+- Login/Register with role selection
+- localStorage persistence
+- Auto-login on refresh
+- useAuth custom hook
+
+### Routing
+- Location: `src/App.jsx`
+- Protected routes with role checking
+- 3 role domains: Student, TPO, Recruiter
+- Organized 17+ routes
+
+### Styling
+- Global CSS with variables
+- Responsive breakpoints (1024px, 768px, 480px)
+- Black & white minimalist theme
+- Utility classes for spacing and layout
+
+### API Integration
+- Location: `src/services/api.js`
+- Axios with request interceptors
+- Organized by role (authAPI, studentAPI, tpoAPI, recruiterAPI)
+- Auto token injection
+
+## Components Overview
+
+### Common Components
+
+| Component | Purpose |
+|-----------|---------|
+| Navbar | Top navigation with user info |
+| Sidebar | Role-based side menu |
+| Footer | Application footer |
+| Card | Reusable card container |
+| Modal | Dialog overlay |
+| ProtectedRoute | Route protection wrapper |
+
+### Student Pages (6)
+
+1. **StudentDashboard** - Stats and overview
+2. **StudentProfile** - Profile management
+3. **StudentJobListings** - Job browsing
+4. **StudentApplications** - Application tracking
+5. **StudentResumeInsights** - ATS score analysis
+6. **StudentPreparation** - Preparation tracking
+
+### TPO Pages (6)
+
+1. **TPODashboard** - Analytics overview
+2. **TPOStudents** - Student management
+3. **TPOJobs** - Job monitoring
+4. **TPOEligibility** - Eligibility rules
+5. **TPOApplications** - Application tracking
+6. **TPOAnalytics** - Analytics dashboard
+
+### Recruiter Pages (5)
+
+1. **RecruiterDashboard** - Recruitment overview
+2. **RecruiterPostJob** - Job posting
+3. **RecruiterJobs** - Job management
+4. **RecruiterApplicants** - Applicant management
+5. **RecruiterOffers** - Offer tracking
 
 ## Available Scripts
 
-In the project directory, you can run:
-
 ### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Runs app in development mode. Open [http://localhost:3000](http://localhost:3000).
+- Page reloads on changes
+- Errors shown in console
 
 ### `npm test`
+Launches test runner in watch mode.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### `npm build`
+Builds for production in `build/` folder.
 
-### `npm run build`
+### `npm eject`
+Exposes webpack config (one-way operation).
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Demo Credentials
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| Role | Email | Password |
+|------|-------|----------|
+| Student | student@example.com | student123 |
+| TPO | tpo@example.com | tpo123 |
+| Recruiter | recruiter@example.com | recruiter123 |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Click demo buttons on login page to auto-fill credentials!
+
+## CSS Architecture
+
+### Global Variables
+```css
+:root {
+  --primary-color: #000;
+  --secondary-color: #333;
+  --background-color: #f5f5f5;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --danger-color: #f44336;
+  --info-color: #2196f3;
+}
+```
+
+### Responsive Breakpoints
+- **Desktop**: 1024px+ (full sidebar)
+- **Tablet**: 768px - 1023px (adapted)
+- **Mobile**: <768px (bottom bar)
+
+### Utility Classes
+- `.flex` - Flexbox
+- `.gap-*`, `.p-*`, `.m-*` - Spacing
+- `.btn` - Buttons
+- `.badge` - Badges
+- `.table` - Tables
+
+## Using Context API
+
+```jsx
+import { useAuth } from '../context/AuthContext';
+
+function MyComponent() {
+  const { user, isAuthenticated, login, logout } = useAuth();
+  
+  return <div>{user?.name}</div>;
+}
+```
+
+## API Integration
+
+```jsx
+import { studentAPI } from '../services/api';
+
+const data = await studentAPI.getDashboard();
+const applied = await studentAPI.getApplications();
+```
+
+## Troubleshooting
+
+**Can't connect to backend?**
+- Ensure backend running on http://localhost:8000
+- Check browser console for CORS errors
+
+**localStorage not working?**
+- Make sure localStorage isn't disabled
+- Try incognito mode
+- Clear cache and try again
+
+**Styles not applying?**
+- Hard refresh: Ctrl+Shift+R (or Cmd+Shift+R)
+- Clear browser cache
+
+## Environment Variables
+
+Create `.env` in frontend folder:
+```
+REACT_APP_API_URL=http://localhost:8000
+```
+
+Access in code:
+```jsx
+const apiUrl = process.env.REACT_APP_API_URL;
+```
+
+## Production Build
+
+```bash
+npm build
+```
+
+Deploy `build/` folder to:
+- Vercel (recommended)
+- Netlify
+- GitHub Pages
+- Any static server
+
+## Dependencies
+
+- react (19.2.4)
+- react-dom (19.2.4)
+- react-router-dom (6.21.0)
+- axios (1.6.5)
+
+## Learn More
+
+- [React Documentation](https://react.dev)
+- [React Router Docs](https://reactrouter.com)
+- [Axios Documentation](https://axios-http.com)
 
 ### `npm run eject`
 

@@ -1,38 +1,76 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.app {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  min-height: 100vh;
+  --sidebar-width: 260px;
+  background: radial-gradient(circle at top left, rgba(90, 119, 223, 0.12), transparent 45%),
+    radial-gradient(circle at 70% 0%, rgba(62, 83, 160, 0.1), transparent 40%),
+    var(--bg-color);
 }
 
-.App-link {
-  color: #61dafb;
+.app-container {
+  display: flex;
+  flex: 1;
+  margin-top: 0;
+  padding: 0 24px 24px 0;
+  gap: 0;
+  align-items: flex-start;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px 20px;
+  background-color: var(--surface-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  width: 100%;
+  min-height: calc(100vh - 112px);
+}
+
+.app-container .sidebar + .main-content {
+  margin-left: var(--sidebar-width);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.app-with-sidebar .footer {
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    margin-top: 0;
+    padding: 4px 16px 84px;
+    gap: 0;
   }
-  to {
-    transform: rotate(360deg);
+
+  .main-content {
+    padding: 12px;
+    border-radius: var(--radius-lg);
+  }
+
+  .app-container .sidebar + .main-content {
+    margin-left: 0;
+    border-top-left-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-lg);
+  }
+
+  .app-with-sidebar .footer {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    margin-top: 0;
+    padding: 4px 12px 80px;
+  }
+
+  .main-content {
+    padding: 16px;
   }
 }

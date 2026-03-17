@@ -36,17 +36,17 @@ import RecruiterApplicants from './pages/recruiter/RecruiterApplicants';
 import RecruiterOffers from './pages/recruiter/RecruiterOffers';
 
 // Styles
-import './App.css';
 import './styles/global.css';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
 
   const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+  const hasSidebarLayout = isAuthenticated && !isAuthPage;
 
   return (
     <Router>
-      <div className="app">
+      <div className={`app ${hasSidebarLayout ? 'app-with-sidebar' : ''}`}>
         {!isAuthPage && <Navbar />}
         <div className="app-container">
           {isAuthenticated && !isAuthPage && <Sidebar />}
