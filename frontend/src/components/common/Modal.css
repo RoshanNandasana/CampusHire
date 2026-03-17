@@ -22,6 +22,7 @@
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   animation: slideUp 0.3s ease;
 }
 
@@ -82,6 +83,7 @@
   padding: 1.5rem;
   max-height: calc(90vh - 200px);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal-footer {

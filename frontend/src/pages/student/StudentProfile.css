@@ -192,6 +192,40 @@
   border: 1px solid rgba(220, 38, 38, 0.26);
 }
 
+.form-success {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #047857;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(5, 150, 105, 0.26);
+}
+
+.section-caption {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--text-light);
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-head .section-caption {
+  margin: 0;
+  flex: 1;
+}
+
+.add-entity-btn {
+  white-space: nowrap;
+}
+
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -208,6 +242,53 @@
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.modal-form .form-grid {
+  margin-bottom: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.modal-form .form-group,
+.modal-form .form-input,
+.modal-form textarea,
+.modal-form input,
+.modal-form select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.modal-form input[type='file'] {
+  overflow: hidden;
+}
+
+.modal-help {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-light);
+}
+
+.modal-file-name {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.modal-textarea {
+  resize: vertical;
 }
 
 .checkbox-group {
@@ -577,6 +658,103 @@
   display: none;
 }
 
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.inline-add {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.marksheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.marksheet-item {
+  border: 1px solid rgba(15, 143, 143, 0.22);
+  background: linear-gradient(145deg, rgba(238, 252, 250, 0.72), rgba(255, 255, 255, 0.95));
+  border-radius: var(--radius-md);
+  padding: 0.95rem;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.85rem;
+}
+
+.record-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.marksheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem;
+}
+
+.file-chip {
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.74rem;
+  border: 1px solid rgba(62, 83, 160, 0.26);
+  background: rgba(62, 83, 160, 0.1);
+  color: #2f438b;
+  font-weight: 600;
+}
+
+.marksheet-upload {
+  margin-top: 0.85rem;
+  width: fit-content;
+}
+
+.project-form {
+  border-top: 1px dashed rgba(204, 212, 222, 0.8);
+  padding-top: 1rem;
+}
+
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.document-item {
+  border: 1px solid rgba(217, 72, 127, 0.24);
+  border-radius: var(--radius-md);
+  background: linear-gradient(145deg, rgba(255, 243, 249, 0.75), rgba(255, 255, 255, 0.95));
+  padding: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.document-item h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+}
+
+.document-item p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-light);
+}
+
+.doc-upload-btn {
+  width: auto;
+  white-space: nowrap;
+}
+
 /* Utility classes */
 .mt-2 { margin-top: 1rem; }
 .mt-3 { margin-top: 1.5rem; }
@@ -601,11 +779,24 @@
     grid-template-columns: 1fr;
   }
 
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .add-entity-btn {
+    width: 100%;
+  }
+
   .avatar-wrap {
     align-items: flex-start;
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-form .form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -615,6 +806,15 @@
 
   .resume-actions {
     flex-direction: column;
+  }
+
+  .document-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .inline-add {
+    grid-template-columns: 1fr;
   }
 
   .item-actions {

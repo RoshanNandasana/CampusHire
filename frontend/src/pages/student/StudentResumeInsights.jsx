@@ -10,6 +10,7 @@ import {
 } from 'react-icons/md';
 import Card from '../../components/common/Card';
 import { studentAPI } from '../../services/api';
+import StudentTopPanel from '../../components/student/StudentTopPanel';
 import './StudentResumeInsights.css';
 
 const StudentResumeInsights = () => {
@@ -131,10 +132,23 @@ const StudentResumeInsights = () => {
 
   return (
     <div className="resume-insights">
-      <div className="insights-header">
-        <h1>Resume & Skill Insights</h1>
-        <p>AI-generated insights to improve your resume and career prospects</p>
-      </div>
+      <StudentTopPanel
+        title="Resume & Skill Insights"
+        subtitle="Improve shortlist readiness with ATS scoring, skill demand gaps, and TPO-reviewed guidance."
+        kicker="Student Resume"
+        stats={[
+          { label: 'ATS Score', value: `${insights.atsScore}/100` },
+          { label: 'Tracked Skills', value: insights.skills.length },
+          { label: 'Skill Gaps', value: insights.skillGaps.length },
+          { label: 'Suggestions', value: insights.suggestions.length },
+        ]}
+        tpoUpdates={[
+          'TPO requires ATS score above 70 for premium drives',
+          'Resume updates are reviewed weekly by placement team',
+          'Skill-gap priorities are aligned with recruiter demand',
+          'Upload latest PDF before each drive deadline',
+        ]}
+      />
 
       <div className="ats-section">
         <Card

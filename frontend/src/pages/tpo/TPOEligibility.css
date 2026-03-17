@@ -16,11 +16,115 @@
   color: var(--text-light);
 }
 
-.form-grid {
+.eligibility-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.eligibility-kpi {
+  border-radius: var(--radius-lg);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
+  gap: 0.25rem;
+  border: 1px solid rgba(204, 212, 222, 0.7);
+  box-shadow: var(--shadow-soft);
+  background: var(--surface-strong);
+}
+
+.eligibility-kpi--indigo {
+  background: linear-gradient(145deg, rgba(62, 83, 160, 0.12), rgba(255, 255, 255, 0.95));
+}
+
+.eligibility-kpi--teal {
+  background: linear-gradient(145deg, rgba(15, 143, 143, 0.12), rgba(255, 255, 255, 0.95));
+}
+
+.eligibility-kpi--amber {
+  background: linear-gradient(145deg, rgba(243, 166, 74, 0.16), rgba(255, 255, 255, 0.95));
+}
+
+.eligibility-kpi--violet {
+  background: linear-gradient(145deg, rgba(115, 73, 199, 0.14), rgba(255, 255, 255, 0.95));
+}
+
+.kpi-label {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.kpi-value {
+  font-size: 1.7rem;
+  color: var(--text-color);
+  line-height: 1.1;
+}
+
+.kpi-sub {
+  font-size: 0.82rem;
+  color: var(--text-light);
+}
+
+.status-message {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(62, 83, 160, 0.25);
+  background: rgba(62, 83, 160, 0.1);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.section-note {
+  margin-bottom: 1rem;
+  color: var(--text-light);
+}
+
+.eligibility-section-card {
+  border: 1px solid rgba(204, 212, 222, 0.7);
+}
+
+.eligibility-section-card--global {
+  border-left: 4px solid var(--primary-color);
+}
+
+.eligibility-section-card--snapshot {
+  border-left: 4px solid var(--info-color);
+}
+
+.eligibility-section-card--company {
+  border-left: 4px solid var(--success-color);
+}
+
+.eligibility-section-card--list {
+  border-left: 4px solid var(--warning-color);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+.form-grid .form-group:last-child {
+  grid-column: 1 / -1;
+}
+
+.company-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.company-branches-field,
+.company-notes-field {
+  grid-column: 1 / -1;
 }
 
 .form-group {
@@ -99,9 +203,11 @@
 .config-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 1rem;
   background-color: var(--surface-color);
   border-radius: var(--radius-md);
+  border: 1px solid rgba(204, 212, 222, 0.6);
 }
 
 .config-label {
@@ -114,8 +220,95 @@
   font-weight: 700;
 }
 
+.company-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.company-rule-item {
+  border: 1px solid rgba(204, 212, 222, 0.8);
+  border-left: 4px solid var(--primary-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: linear-gradient(145deg, rgba(250, 251, 255, 0.9), rgba(255, 255, 255, 0.96));
+}
+
+.company-rule-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.company-rule-head h4 {
+  margin: 0;
+}
+
+.company-rule-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rule-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary-color);
+  background: rgba(62, 83, 160, 0.12);
+  border: 1px solid rgba(62, 83, 160, 0.22);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.company-rule-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+
+.company-rule-branches {
+  font-size: 0.92rem;
+  margin-bottom: 0.5rem;
+}
+
+.company-rule-notes {
+  margin: 0;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 @media (max-width: 768px) {
   .tpo-eligibility {
     padding: 0;
+  }
+
+  .eligibility-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-rule-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .eligibility-kpi-grid {
+    grid-template-columns: 1fr;
   }
 }

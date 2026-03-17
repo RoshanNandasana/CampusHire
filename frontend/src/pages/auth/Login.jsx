@@ -1,21 +1,33 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import {
+  MdVisibility,
+  MdVisibilityOff,
+} from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('student');
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const demoAccounts = {
-    student: { email: 'student@example.com', password: 'student123' },
-    tpo: { email: 'tpo@example.com', password: 'tpo123' },
-    recruiter: { email: 'recruiter@example.com', password: 'recruiter123' },
+  const sampleCredentials = [
+    { role: 'Student', email: 'student@example.com', password: 'student123' },
+    { role: 'TPO', email: 'tpo@example.com', password: 'tpo123' },
+    { role: 'Recruiter', email: 'recruiter@example.com', password: 'recruiter123' },
+  ];
+
+  const resolveRoleFromId = (loginId) => {
+    const id = loginId.toLowerCase();
+    if (id.includes('tpo')) return 'tpo';
+    if (id.includes('recruiter') || id.includes('hr')) return 'recruiter';
+    return 'student';
   };
 
   const handleSubmit = async (e) => {
@@ -26,6 +38,8 @@ const Login = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
+
+      const role = resolveRoleFromId(email);
 
       // Demo authentication
       const user = {
@@ -49,103 +63,118 @@ const Login = () => {
     }
   };
 
-  const handleDemoLogin = (selectedRole) => {
-    const demo = demoAccounts[selectedRole];
-    setEmail(demo.email);
-    setPassword(demo.password);
-    setRole(selectedRole);
+  const applySampleCredential = (credential) => {
+    setEmail(credential.email);
+    setPassword(credential.password);
+    setShowPassword(false);
+    setError('');
   };
 
   return (
     <div className="login-container">
-      <div className="login-box">
-        <div className="login-header">
-          <h1>🎓 CampusHire</h1>
-          <p>Campus Placement Management System</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="role">Login as</label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="form-input"
-            >
-              <option value="student">Student</option>
-              <option value="tpo">TPO (Training & Placement Officer)</option>
-              <option value="recruiter">Recruiter</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="form-input"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <div className="demo-section">
-          <h4>Demo Accounts</h4>
-          <div className="demo-buttons">
-            <button
-              type="button"
-              className="demo-btn"
-              onClick={() => handleDemoLogin('student')}
-            >
-              <span className="demo-icon">👨‍🎓</span>
-              <span>Student</span>
-            </button>
-            <button
-              type="button"
-              className="demo-btn"
-              onClick={() => handleDemoLogin('tpo')}
-            >
-              <span className="demo-icon">👨‍💼</span>
-              <span>TPO</span>
-            </button>
-            <button
-              type="button"
-              className="demo-btn"
-              onClick={() => handleDemoLogin('recruiter')}
-            >
-              <span className="demo-icon">🏢</span>
-              <span>Recruiter</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="login-footer">
+      <div className="login-shell">
+        <div className="login-brand-panel">
+          <div className="brand-badge">CampusHire</div>
+          <h2>Professional Placement Portal</h2>
           <p>
-            Don't have an account? <Link to="/register">Register here</Link>
+            Access your official account using assigned login ID and password.
+            Built for students, TPO teams, and recruiters.
           </p>
+          <ul>
+            <li>Single secure login panel</li>
+            <li>Real-time placement workflow visibility</li>
+            <li>Role-specific dashboard access</li>
+          </ul>
+        </div>
+
+        <div className="login-box">
+          <div className="auth-card">
+            <div className="login-header">
+              <div className="login-logo">CH</div>
+              <h1>Welcome Back</h1>
+              <p>Sign in with your assigned credentials</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group">
+              <label htmlFor="email">Login ID / Email</label>
+              <div className="input-wrap">
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="form-input"
+                  placeholder="Enter your login ID"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrap">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="form-input"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="login-meta-row">
+              <label className="remember-check">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                Remember me
+              </label>
+              <button type="button" className="forgot-btn">Forgot password?</button>
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-full login-btn"
+                disabled={loading}
+              >
+                {loading ? 'Signing in...' : 'Login'}
+              </button>
+            </form>
+
+            <div className="sample-credentials">
+              <h4>Sample Credentials</h4>
+              <div className="credentials-grid">
+                {sampleCredentials.map((credential) => (
+                  <button
+                    key={credential.role}
+                    type="button"
+                    className="credential-card"
+                    onClick={() => applySampleCredential(credential)}
+                  >
+                    <span className="cred-role">{credential.role}</span>
+                    <span className="cred-id">{credential.email}</span>
+                    <span className="cred-pass">{credential.password}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Card from '../../components/common/Card';
+import StudentTopPanel from '../../components/student/StudentTopPanel';
 import './StudentDashboard.css';
 
 const StudentDashboard = () => {
@@ -77,10 +78,23 @@ const StudentDashboard = () => {
 
   return (
     <div className="student-dashboard">
-      <div className="dashboard-header">
-        <h1>Welcome back, Student! 👋</h1>
-        <p>Track your placement journey and stay updated</p>
-      </div>
+      <StudentTopPanel
+        title="Welcome back, Student!"
+        subtitle="Track your placement journey with complete visibility of TPO rules and updates."
+        kicker="Student Dashboard"
+        stats={[
+          { label: 'Profile', value: `${stats.profileCompletion}%` },
+          { label: 'Readiness', value: `${stats.placementReadiness}%` },
+          { label: 'Applied Jobs', value: stats.appliedJobs },
+          { label: 'Upcoming Drives', value: stats.upcomingDrives },
+        ]}
+        tpoUpdates={[
+          'Eligibility baseline: Min CGPA 6.0',
+          'Max offers policy: 2 offers per student',
+          'Active notice: Keep all marksheets uploaded',
+          'Placement status updates synced daily by TPO',
+        ]}
+      />
 
       <div className="stats-grid">
         <Card className="stat-card highlighted">

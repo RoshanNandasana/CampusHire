@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
+import StudentTopPanel from '../../components/student/StudentTopPanel';
 import './StudentJobListings.css';
 
 const StudentJobListings = () => {
@@ -39,6 +40,8 @@ const StudentJobListings = () => {
         { label: 'Bond Agreement (PDF)', url: '#' },
       ],
       selectionProcess: ['Online assessment', 'Technical interviews', 'HR interview'],
+      tpoNote: 'Approved by TPO for 2024 CSE batch. Carry updated resume and transcript.',
+      tpoCoordinator: 'Dr. R. Sharma',
     },
     {
       id: 2,
@@ -64,6 +67,8 @@ const StudentJobListings = () => {
         { label: 'Job Description (PDF)', url: '#' },
       ],
       selectionProcess: ['Case study', 'Panel interview', 'HR interview'],
+      tpoNote: 'Open for students with Product case-study completion certificate.',
+      tpoCoordinator: 'Prof. Neha Soni',
     },
     {
       id: 3,
@@ -90,6 +95,8 @@ const StudentJobListings = () => {
         { label: 'Bond Agreement (PDF)', url: '#' },
       ],
       selectionProcess: ['Coding test', 'Technical interviews', 'HR interview'],
+      tpoNote: 'Interview prep workshop mandatory before shortlist release.',
+      tpoCoordinator: 'Dr. R. Sharma',
     },
     {
       id: 4,
@@ -115,6 +122,8 @@ const StudentJobListings = () => {
         { label: 'Role Overview (PDF)', url: '#' },
       ],
       selectionProcess: ['Aptitude test', 'Technical interview', 'HR interview'],
+      tpoNote: 'Mass recruiter drive. Document verification by TPO is required first.',
+      tpoCoordinator: 'Prof. Rahul Desai',
     },
   ]);
 
@@ -137,10 +146,23 @@ const StudentJobListings = () => {
 
   return (
     <div className="job-listings">
-      <div className="listings-header">
-        <h1>Available Job Openings</h1>
-        <p>Check out exciting opportunities from top companies. Only eligible jobs are shown based on your CGPA (8.2).</p>
-      </div>
+      <StudentTopPanel
+        title="Available Job Openings"
+        subtitle="Explore recruiter jobs with complete TPO eligibility, coordinator, and policy visibility."
+        kicker="Student Jobs"
+        stats={[
+          { label: 'Eligible Jobs', value: filteredJobs.length },
+          { label: 'Profile CGPA', value: '8.2' },
+          { label: 'Current Cycle', value: '2024' },
+          { label: 'Filters Applied', value: filters.searchQuery ? '1' : '0' },
+        ]}
+        tpoUpdates={[
+          'TPO rule: Min CGPA eligibility applies before apply button',
+          'All drives require verified academic records',
+          'Coordinator details are shown in each job detail panel',
+          'Policy notes from TPO are visible per company posting',
+        ]}
+      />
 
       <Card title="Filter Jobs" className="filter-card">
         <div className="filter-grid">

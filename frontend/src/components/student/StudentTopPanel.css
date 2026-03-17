@@ -1,0 +1,110 @@
+.student-top-panel {
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.student-top-main {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(204, 212, 222, 0.7);
+  box-shadow: var(--shadow-soft);
+}
+
+.student-top-main {
+  padding: 1.15rem 1.25rem;
+  background: linear-gradient(135deg, rgba(62, 83, 160, 0.12), rgba(90, 119, 223, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.student-top-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.student-top-kicker {
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(62, 83, 160, 0.14);
+  color: var(--primary-color);
+  margin-bottom: 0.35rem;
+}
+
+.student-top-main h1 {
+  margin: 0;
+  font-size: 1.65rem;
+}
+
+.student-top-main p {
+  margin: 0.35rem 0 0;
+  color: var(--text-light);
+  font-size: 0.92rem;
+}
+
+.student-top-action {
+  min-width: 160px;
+}
+
+.student-top-action .btn,
+.student-top-action button {
+  width: 100%;
+}
+
+.student-top-stats {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.student-top-stat-card {
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(62, 83, 160, 0.18);
+  background: rgba(255, 255, 255, 0.88);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.student-top-stat-label {
+  font-size: 0.74rem;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.student-top-stat-value {
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .student-top-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .student-top-head {
+    flex-direction: column;
+  }
+
+  .student-top-action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .student-top-main h1 {
+    font-size: 1.35rem;
+  }
+
+  .student-top-stats {
+    grid-template-columns: 1fr;
+  }
+}
