@@ -1,512 +1,702 @@
-import React, { useState, useMemo } from 'react';
-import {
-  MdBusinessCenter, MdCheckCircle, MdEvent, MdPeople, MdPlaylistAddCheck,
-  MdLocalOffer, MdEmojiEvents, MdAccessTime, MdSearch, MdClose,
-  MdAdd, MdLocationOn, MdVisibility, MdEdit, MdGroup,
-  MdBarChart, MdSchool, MdRepeat, MdDescription,
-  MdArrowUpward, MdArrowDownward,
-} from 'react-icons/md';
+import React, { useEffect, useMemo, useState } from 'react';
+import Card from '../../components/common/Card';
+import Modal from '../../components/common/Modal';
 import './TPOJobs.css';
 
-const JOBS_DATA = [
+const REQUESTS_STORAGE_KEY = 'campusHireCompanyRequests';
+const STUDENT_JOBS_STORAGE_KEY = 'campusHireApprovedStudentJobs';
+const COLLEGE_RULES_STORAGE_KEY = 'campusHireCollegeEligibilityRules';
+
+const BASE_REQUIRED_DOCUMENTS = [
+  'Resume PDF',
+  '10th Marksheet PDF',
+  '12th Marksheet PDF',
+  'Graduation Marksheet PDF',
+  'Job Description PDF',
+  'Eligibility Rules PDF',
+  'Bond Agreement PDF',
+];
+
+const getRequiredDocuments = (bondDurationMonths) =>
+  BASE_REQUIRED_DOCUMENTS.filter((doc) => (bondDurationMonths > 0 ? true : doc !== 'Bond Agreement PDF'));
+
+const normalizeRequest = (request) => ({
+  ...request,
+  requiredDocuments:
+    Array.isArray(request.requiredDocuments) && request.requiredDocuments.length
+      ? request.requiredDocuments
+      : getRequiredDocuments(request.bondDurationMonths),
+  tpoExtraNotice: request.tpoExtraNotice || '',
+});
+
+const PREFILLED_COMPANY_REQUESTS = [
   {
-    id: 1, company: 'Google', companyLogo: 'G', logoColor: '#4285F4',
-    position: 'Software Engineer', type: 'Full Time',
-    department: ['CSE', 'IT'], location: 'Bangalore', ctc: '18 LPA',
-    postedDate: '2024-01-10', deadline: '2024-02-10', status: 'active',
-    applicants: 145, shortlisted: 32, interviewed: 22, offered: 8, joined: 6,
-    rounds: ['Online Test', 'Technical Round 1', 'Technical Round 2', 'HR Round'],
-    minCGPA: 7.5, backlogsAllowed: false,
-    description: 'Google is hiring strong Software Engineers to build products used by billions. Looking for problem solvers with excellent coding and system design skills.',
+    id: 1,
+    company: 'Google',
+    position: 'Software Engineer',
+    openings: 24,
+    location: 'Bangalore',
+    ctc: '20 LPA',
+    minCGPA: 7.5,
+    skills: ['DSA', 'JavaScript', 'System Design'],
+    bondDurationMonths: 0,
+    bondDetails: 'No bond. Standard offer terms apply.',
+    driveDate: '2026-04-24',
+    deadline: '2026-04-20',
+    contactName: 'Ananya Mehta',
+    contactRole: 'University Relations Lead',
+    contactEmail: 'ananya.mehta@google.com',
+    contactPhone: '+91 98111 22550',
+    description: 'Campus hiring for software roles in backend and product engineering teams.',
+    selectionProcess: ['Online coding test', 'Technical interviews', 'HR discussion'],
+    requiredDocuments: getRequiredDocuments(0),
+    tpoExtraNotice: '',
+    approvalStatus: 'pending',
   },
   {
-    id: 2, company: 'Microsoft', companyLogo: 'M', logoColor: '#00A4EF',
-    position: 'Product Manager', type: 'Full Time',
-    department: ['CSE', 'ECE'], location: 'Hyderabad', ctc: '22 LPA',
-    postedDate: '2024-01-15', deadline: '2024-02-20', status: 'active',
-    applicants: 98, shortlisted: 15, interviewed: 10, offered: 5, joined: 4,
-    rounds: ['Aptitude Test', 'Case Study Round', 'Technical Interview', 'HR Round'],
-    minCGPA: 8.0, backlogsAllowed: false,
-    description: 'Microsoft seeks dynamic product thinkers who can bridge technical and business goals. Strong analytical and communication skills required.',
+    id: 2,
+    company: 'Infosys',
+    position: 'Software Developer',
+    openings: 60,
+    location: 'Pune',
+    ctc: '8 LPA',
+    minCGPA: 6.5,
+    skills: ['Java', 'DBMS', 'OOPS'],
+    bondDurationMonths: 12,
+    bondDetails: 'One-year service bond for fresh graduate onboarding.',
+    driveDate: '2026-04-28',
+    deadline: '2026-04-25',
+    contactName: 'Ravi Kulkarni',
+    contactRole: 'Talent Acquisition Manager',
+    contactEmail: 'ravi.kulkarni@infosys.com',
+    contactPhone: '+91 98222 10045',
+    description: 'Large-scale campus hiring for software developer roles across business units.',
+    selectionProcess: ['Aptitude test', 'Technical interview', 'HR interview'],
+    requiredDocuments: getRequiredDocuments(12),
+    tpoExtraNotice: '',
+    approvalStatus: 'approved',
   },
   {
-    id: 3, company: 'Amazon', companyLogo: 'A', logoColor: '#FF9900',
-    position: 'Data Engineer', type: 'Full Time',
-    department: ['CSE', 'IT', 'ECE'], location: 'Chennai', ctc: '15 LPA',
-    postedDate: '2024-01-12', deadline: '2024-01-30', status: 'closed',
-    applicants: 125, shortlisted: 28, interviewed: 18, offered: 9, joined: 7,
-    rounds: ['Online Assessment', 'Technical Interview', 'Bar Raiser Round'],
-    minCGPA: 7.0, backlogsAllowed: false,
-    description: 'Amazon Data team is expanding rapidly. Looking for engineers skilled in data pipelines, SQL, Python, and distributed systems.',
+    id: 3,
+    company: 'Deloitte',
+    position: 'Business Analyst',
+    openings: 18,
+    location: 'Delhi',
+    ctc: '10 LPA',
+    minCGPA: 7.0,
+    skills: ['Excel', 'Analytics', 'Communication'],
+    bondDurationMonths: 0,
+    bondDetails: 'No bond required for this role.',
+    driveDate: '2026-05-02',
+    deadline: '2026-04-29',
+    contactName: 'Shruti Jain',
+    contactRole: 'Campus Program Manager',
+    contactEmail: 'shruti.jain@deloitte.com',
+    contactPhone: '+91 99201 66772',
+    description: 'Hiring for analyst positions with focus on consulting and digital delivery.',
+    selectionProcess: ['Aptitude round', 'Case interview', 'HR round'],
+    requiredDocuments: getRequiredDocuments(0),
+    tpoExtraNotice: '',
+    approvalStatus: 'pending',
   },
   {
-    id: 4, company: 'TCS', companyLogo: 'T', logoColor: '#0A2D8A',
-    position: 'Systems Engineer', type: 'Full Time',
-    department: ['CSE', 'ECE', 'ME', 'Civil'], location: 'Pune', ctc: '7 LPA',
-    postedDate: '2024-01-08', deadline: '2024-03-01', status: 'active',
-    applicants: 210, shortlisted: 85, interviewed: 70, offered: 55, joined: 48,
-    rounds: ['TCS National Qualifier', 'Technical Interview', 'HR Round'],
-    minCGPA: 6.0, backlogsAllowed: true,
-    description: 'TCS Systems Engineer profile is open to all branches. Candidates will work on diverse enterprise client projects across India.',
-  },
-  {
-    id: 5, company: 'Infosys', companyLogo: 'I', logoColor: '#007CC3',
-    position: 'Software Developer', type: 'Full Time',
-    department: ['CSE', 'IT', 'ECE'], location: 'Mumbai', ctc: '8 LPA',
-    postedDate: '2024-01-20', deadline: '2024-04-01', status: 'upcoming',
-    applicants: 0, shortlisted: 0, interviewed: 0, offered: 0, joined: 0,
-    rounds: ['InfyTQ Certification', 'Technical Interview', 'HR Round'],
-    minCGPA: 6.5, backlogsAllowed: false,
-    description: 'Infosys is hiring Software Developers for the upcoming batch. Candidates with Infosys InfyTQ certification will be given preference.',
-  },
-  {
-    id: 6, company: 'Wipro', companyLogo: 'W', logoColor: '#341F6D',
-    position: 'Project Engineer', type: 'Full Time',
-    department: ['CSE', 'ECE', 'ME'], location: 'Noida', ctc: '6.5 LPA',
-    postedDate: '2024-01-05', deadline: '2024-02-01', status: 'paused',
-    applicants: 76, shortlisted: 20, interviewed: 0, offered: 0, joined: 0,
-    rounds: ['Written Test', 'Technical Interview', 'HR Round'],
-    minCGPA: 6.0, backlogsAllowed: true,
-    description: 'Wipro Project Engineer role is currently paused pending drive schedule confirmation. Registration is open.',
-  },
-  {
-    id: 7, company: 'Deloitte', companyLogo: 'D', logoColor: '#86BC25',
-    position: 'Business Analyst', type: 'Full Time',
-    department: ['CSE', 'IT', 'ECE', 'ME'], location: 'Delhi', ctc: '10 LPA',
-    postedDate: '2024-01-18', deadline: '2024-02-28', status: 'active',
-    applicants: 88, shortlisted: 24, interviewed: 16, offered: 7, joined: 6,
-    rounds: ['Aptitude Test', 'Group Discussion', 'Technical Interview', 'HR Round'],
-    minCGPA: 7.0, backlogsAllowed: false,
-    description: 'Deloitte is seeking Business Analysts to work on digital transformation and consulting projects for large enterprises.',
-  },
-  {
-    id: 8, company: 'Accenture', companyLogo: 'Ac', logoColor: '#A100FF',
-    position: 'Associate Software Engineer', type: 'Full Time',
-    department: ['CSE', 'IT', 'ECE', 'ME', 'Civil'], location: 'Bengaluru', ctc: '6.5 LPA',
-    postedDate: '2024-01-22', deadline: '2024-04-15', status: 'upcoming',
-    applicants: 0, shortlisted: 0, interviewed: 0, offered: 0, joined: 0,
-    rounds: ['Cognitive Assessment', 'Coding Test', 'Technical Interview', 'HR'],
-    minCGPA: 6.0, backlogsAllowed: false,
-    description: 'Accenture is hiring ASE candidates through campus drive. Open to all technical branches with strong fundamentals.',
+    id: 4,
+    company: 'TCS',
+    position: 'Systems Engineer',
+    openings: 120,
+    location: 'Chennai',
+    ctc: '7 LPA',
+    minCGPA: 6.0,
+    skills: ['Programming Basics', 'SQL', 'Communication'],
+    bondDurationMonths: 24,
+    bondDetails: 'Two-year bond with training and project deployment clause.',
+    driveDate: '2026-05-05',
+    deadline: '2026-05-01',
+    contactName: 'Priyanka Sharma',
+    contactRole: 'Regional Recruitment SPOC',
+    contactEmail: 'priyanka.sharma@tcs.com',
+    contactPhone: '+91 98900 88310',
+    description: 'Pan-campus hiring for systems engineer role open for multiple departments.',
+    selectionProcess: ['National qualifier test', 'Technical + managerial round', 'HR round'],
+    requiredDocuments: getRequiredDocuments(24),
+    tpoExtraNotice: '',
+    approvalStatus: 'rejected',
   },
 ];
 
-const STATUS_CONFIG = {
-  active:   { label: 'Active',   color: '#059669', bg: 'rgba(5,150,105,0.10)'   },
-  closed:   { label: 'Closed',   color: '#DC2626', bg: 'rgba(220,38,38,0.10)'   },
-  upcoming: { label: 'Upcoming', color: '#D97706', bg: 'rgba(217,119,6,0.10)'   },
-  paused:   { label: 'Paused',   color: '#6B7280', bg: 'rgba(107,114,128,0.10)' },
+const TARGET_COMPANIES_THIS_SEMESTER = 12;
+
+const DEFAULT_COLLEGE_RULES = {
+  minCGPA: 6,
+  maxOffersPerStudent: 2,
 };
 
-const DEPARTMENTS = ['All Departments', 'CSE', 'ECE', 'ME', 'Civil', 'IT'];
-const TABS = ['All', 'Active', 'Closed', 'Upcoming', 'Paused'];
+const formatDate = (dateStr) =>
+  new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 
-const fmt = (dateStr) =>
-  new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+const getStatusClass = (status) => {
+  if (status === 'approved') return 'status-approved';
+  if (status === 'rejected') return 'status-rejected';
+  return 'status-pending';
+};
 
-const pct = (num, den) => (den > 0 ? ((num / den) * 100).toFixed(1) : '0.0');
+const getStatusLabel = (status) => {
+  if (status === 'approved') return 'Approved';
+  if (status === 'rejected') return 'Rejected';
+  return 'Pending';
+};
+
+const mapApprovedCompanyToStudentJob = (company, collegeRules) => ({
+  id: Number(`${company.id}${company.openings}`),
+  company: company.company,
+  position: company.position,
+  description: company.description,
+  minCGPA: Math.max(Number(company.minCGPA), Number(collegeRules.minCGPA)),
+  skills: company.skills,
+  ctc: company.ctc,
+  locations: [company.location],
+  deadline: company.deadline,
+  bondAgreement: {
+    required: company.bondDurationMonths > 0,
+    durationMonths: company.bondDurationMonths,
+    details: company.bondDetails,
+  },
+  selectionProcess: company.selectionProcess,
+  documents: company.requiredDocuments.map((doc) => ({ label: doc, url: '#', type: 'PDF' })),
+  tpoNote: `Approved by TPO. Branch-specific rules applied: Min CGPA ${collegeRules.minCGPA}, Max Offers ${collegeRules.maxOffersPerStudent}. Drive date: ${formatDate(company.driveDate)}. Contact: ${company.contactName}.${company.tpoExtraNotice ? ` Notice: ${company.tpoExtraNotice}` : ''}`,
+  tpoCoordinator: 'Campus TPO Office',
+});
 
 const TPOJobs = () => {
-  const [search, setSearch]         = useState('');
-  const [activeTab, setActiveTab]   = useState('All');
-  const [department, setDepartment] = useState('All Departments');
-  const [sortBy, setSortBy]         = useState('postedDate');
-  const [sortDir, setSortDir]       = useState('desc');
-  const [selectedJob, setSelectedJob] = useState(null);
-
-  /* ─── Summary stats ─────────────────────────────────────── */
-  const stats = useMemo(() => {
-    const all   = JOBS_DATA;
-    const today = new Date();
-    return {
-      total:           all.length,
-      active:          all.filter(j => j.status === 'active').length,
-      upcoming:        all.filter(j => j.status === 'upcoming').length,
-      totalApplicants: all.reduce((s, j) => s + j.applicants, 0),
-      totalShortlisted:all.reduce((s, j) => s + j.shortlisted, 0),
-      totalOffers:     all.reduce((s, j) => s + j.offered, 0),
-      totalJoined:     all.reduce((s, j) => s + j.joined, 0),
-      expiringSoon:    all.filter(j => j.status === 'active' && (new Date(j.deadline) - today) / 86400000 <= 7).length,
-    };
-  }, []);
-
-  /* ─── Filtered + sorted list ─────────────────────────────── */
-  const filteredJobs = useMemo(() => {
-    let list = [...JOBS_DATA];
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(j =>
-        j.company.toLowerCase().includes(q) ||
-        j.position.toLowerCase().includes(q) ||
-        j.location.toLowerCase().includes(q)
-      );
+  const [requests, setRequests] = useState(() => {
+    const stored = localStorage.getItem(REQUESTS_STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(normalizeRequest);
+        }
+      } catch (error) {
+        return PREFILLED_COMPANY_REQUESTS;
+      }
     }
-    if (activeTab !== 'All') list = list.filter(j => j.status === activeTab.toLowerCase());
-    if (department !== 'All Departments') list = list.filter(j => j.department.includes(department));
-    list.sort((a, b) => {
-      let av = a[sortBy], bv = b[sortBy];
-      if (typeof av === 'string') av = av.toLowerCase();
-      if (typeof bv === 'string') bv = bv.toLowerCase();
-      return sortDir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
+    return PREFILLED_COMPANY_REQUESTS.map(normalizeRequest);
+  });
+
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [editDraft, setEditDraft] = useState(null);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [collegeRules, setCollegeRules] = useState(() => {
+    const storedRules = localStorage.getItem(COLLEGE_RULES_STORAGE_KEY);
+    if (storedRules) {
+      try {
+        const parsedRules = JSON.parse(storedRules);
+        if (parsedRules && typeof parsedRules === 'object') {
+          return {
+            minCGPA: Number(parsedRules.minCGPA) || DEFAULT_COLLEGE_RULES.minCGPA,
+            maxOffersPerStudent:
+              Number(parsedRules.maxOffersPerStudent) || DEFAULT_COLLEGE_RULES.maxOffersPerStudent,
+          };
+        }
+      } catch (error) {
+        return DEFAULT_COLLEGE_RULES;
+      }
+    }
+    return DEFAULT_COLLEGE_RULES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
+    localStorage.setItem(COLLEGE_RULES_STORAGE_KEY, JSON.stringify(collegeRules));
+
+    const approvedJobs = requests
+      .filter((request) => request.approvalStatus === 'approved')
+      .map((request) => mapApprovedCompanyToStudentJob(request, collegeRules));
+
+    localStorage.setItem(STUDENT_JOBS_STORAGE_KEY, JSON.stringify(approvedJobs));
+  }, [requests, collegeRules]);
+
+  const stats = useMemo(() => {
+    const approved = requests.filter((request) => request.approvalStatus === 'approved').length;
+    const pending = requests.filter((request) => request.approvalStatus === 'pending').length;
+    const rejected = requests.filter((request) => request.approvalStatus === 'rejected').length;
+
+    return {
+      totalRequests: requests.length,
+      approved,
+      pending,
+      rejected,
+      targetRemaining: Math.max(TARGET_COMPANIES_THIS_SEMESTER - approved, 0),
+    };
+  }, [requests]);
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter((request) => {
+      const searchQuery = search.trim().toLowerCase();
+      const matchesSearch =
+        !searchQuery ||
+        request.company.toLowerCase().includes(searchQuery) ||
+        request.position.toLowerCase().includes(searchQuery) ||
+        request.contactName.toLowerCase().includes(searchQuery);
+
+      const matchesStatus = statusFilter === 'all' || request.approvalStatus === statusFilter;
+      return matchesSearch && matchesStatus;
     });
-    return list;
-  }, [search, activeTab, department, sortBy, sortDir]);
+  }, [requests, search, statusFilter]);
 
-  const handleSort = (col) => {
-    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortBy(col); setSortDir('desc'); }
+  const handleApprovalChange = (requestId, newStatus) => {
+    setRequests((prev) =>
+      prev.map((request) =>
+        request.id === requestId
+          ? {
+              ...request,
+              approvalStatus: newStatus,
+            }
+          : request
+      )
+    );
+
+    if (newStatus === 'approved') {
+      setFeedbackMessage('Company approved. It is now visible on the student jobs panel.');
+      return;
+    }
+
+    setFeedbackMessage('Company status updated successfully.');
   };
 
-  const sortIcon = (col) => {
-    if (sortBy !== col) return null;
-    return sortDir === 'asc'
-      ? <MdArrowUpward className="sort-arrow" />
-      : <MdArrowDownward className="sort-arrow" />;
+  const openCompanyDetails = (request) => {
+    setSelectedCompany(request);
+    setEditDraft({
+      openings: request.openings,
+      minCGPA: request.minCGPA,
+      driveDate: request.driveDate,
+      deadline: request.deadline,
+      contactName: request.contactName,
+      contactRole: request.contactRole,
+      contactEmail: request.contactEmail,
+      contactPhone: request.contactPhone,
+      bondDetails: request.bondDetails,
+      requiredDocuments: request.requiredDocuments,
+      tpoExtraNotice: request.tpoExtraNotice || '',
+    });
   };
 
-  const tabCount = (tab) =>
-    tab === 'All' ? JOBS_DATA.length : JOBS_DATA.filter(j => j.status === tab.toLowerCase()).length;
+  const handleDraftValueChange = (key, value) => {
+    setEditDraft((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
-  /* ─── Render ─────────────────────────────────────────────── */
+  const handleDocumentToggle = (documentName) => {
+    setEditDraft((prev) => {
+      const hasDocument = prev.requiredDocuments.includes(documentName);
+      if (hasDocument) {
+        return {
+          ...prev,
+          requiredDocuments: prev.requiredDocuments.filter((item) => item !== documentName),
+        };
+      }
+
+      return {
+        ...prev,
+        requiredDocuments: [...prev.requiredDocuments, documentName],
+      };
+    });
+  };
+
+  const handleSaveCompanyEdits = () => {
+    if (!selectedCompany || !editDraft) return;
+
+    if (!editDraft.requiredDocuments.length) {
+      setFeedbackMessage('Please keep at least one required PDF document for student application.');
+      return;
+    }
+
+    const updatedCompany = {
+      ...selectedCompany,
+      openings: Number(editDraft.openings) || 0,
+      minCGPA: Number(editDraft.minCGPA) || 0,
+      driveDate: editDraft.driveDate,
+      deadline: editDraft.deadline,
+      contactName: editDraft.contactName.trim(),
+      contactRole: editDraft.contactRole.trim(),
+      contactEmail: editDraft.contactEmail.trim(),
+      contactPhone: editDraft.contactPhone.trim(),
+      bondDetails: editDraft.bondDetails.trim(),
+      requiredDocuments: editDraft.requiredDocuments,
+      tpoExtraNotice: editDraft.tpoExtraNotice.trim(),
+    };
+
+    setRequests((prev) =>
+      prev.map((request) => (request.id === selectedCompany.id ? updatedCompany : request))
+    );
+    setSelectedCompany(updatedCompany);
+    setFeedbackMessage(`Saved updates for ${updatedCompany.company}.`);
+  };
+
   return (
-    <div className="tpo-jobs">
-
-      {/* ── Header ── */}
-      <div className="jobs-header">
-        <div>
-          <h1>Job Monitoring</h1>
-          <p>Track all job postings, application pipelines &amp; placement funnels</p>
-        </div>
-        <button className="jm-btn-primary">
-          <MdAdd size={18} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-          Post New Job
-        </button>
+    <div className="tpo-jobs-simple">
+      <div className="jobs-simple-header">
+        <h1>Company Approval Panel</h1>
+        <p>
+          Keep this simple: review prefilled company requests, approve entries, and publish only approved drives to students.
+        </p>
       </div>
 
-      {/* ── KPI Stats ── */}
-      <div className="jobs-stats-grid">
-        {[
-          { label: 'Total Jobs',       value: stats.total,            icon: <MdBusinessCenter size={22} />, cls: 'blue'   },
-          { label: 'Active Jobs',      value: stats.active,           icon: <MdCheckCircle size={22} />,    cls: 'green'  },
-          { label: 'Upcoming Drives',  value: stats.upcoming,         icon: <MdEvent size={22} />,          cls: 'yellow' },
-          { label: 'Total Applicants', value: stats.totalApplicants,  icon: <MdPeople size={22} />,         cls: 'purple' },
-          { label: 'Shortlisted',      value: stats.totalShortlisted, icon: <MdPlaylistAddCheck size={22}/>,cls: 'orange' },
-          { label: 'Offers Made',      value: stats.totalOffers,      icon: <MdLocalOffer size={22} />,     cls: 'teal'   },
-          { label: 'Students Joined',  value: stats.totalJoined,      icon: <MdEmojiEvents size={22} />,    cls: 'indigo' },
-          { label: 'Expiring Soon',    value: stats.expiringSoon,     icon: <MdAccessTime size={22} />,     cls: 'red'    },
-        ].map(s => (
-          <div key={s.label} className={`job-stat-card ${s.cls}`}>
-            <div className="job-stat-icon">{s.icon}</div>
-            <div className="job-stat-info">
-              <span className="job-stat-label">{s.label}</span>
-              <span className="job-stat-value">{s.value}</span>
-            </div>
+      {feedbackMessage && <p className="jobs-feedback">{feedbackMessage}</p>}
+
+      <div className="jobs-simple-stats">
+        <Card className="stat-card stat-blue">
+          <span className="stat-label">Target Companies</span>
+          <strong>{TARGET_COMPANIES_THIS_SEMESTER}</strong>
+        </Card>
+
+        <Card className="stat-card stat-green">
+          <span className="stat-label">Approved For Students</span>
+          <strong>{stats.approved}</strong>
+        </Card>
+
+        <Card className="stat-card stat-yellow">
+          <span className="stat-label">Pending TPO Approval</span>
+          <strong>{stats.pending}</strong>
+        </Card>
+
+        <Card className="stat-card stat-red">
+          <span className="stat-label">Still Needed</span>
+          <strong>{stats.targetRemaining}</strong>
+        </Card>
+      </div>
+
+      <Card title="College Eligibility Rules (Manage Here)" className="jobs-rules-card">
+        <p className="rules-note">
+          No separate eligibility panel is needed. This is a single-branch TPO panel, so configure branch-level eligibility here.
+        </p>
+
+        <div className="rules-grid">
+          <div className="form-group">
+            <label>Global Minimum CGPA</label>
+            <input
+              type="number"
+              className="form-input"
+              min="0"
+              max="10"
+              step="0.1"
+              value={collegeRules.minCGPA}
+              onChange={(event) =>
+                setCollegeRules((prev) => ({
+                  ...prev,
+                  minCGPA: Number(event.target.value) || 0,
+                }))
+              }
+            />
           </div>
-        ))}
-      </div>
 
-      {/* ── Filter Bar ── */}
-      <div className="jobs-filter-bar">
-        <div className="jobs-search-wrap">
-          <MdSearch size={20} className="jobs-search-icon" />
-          <input
-            className="jobs-search"
-            placeholder="Search company, position, location…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button className="jobs-search-clear" onClick={() => setSearch('')}>
-              <MdClose size={15} />
-            </button>
-          )}
+          <div className="form-group">
+            <label>Max Offers Per Student</label>
+            <input
+              type="number"
+              className="form-input"
+              min="1"
+              value={collegeRules.maxOffersPerStudent}
+              onChange={(event) =>
+                setCollegeRules((prev) => ({
+                  ...prev,
+                  maxOffersPerStudent: Number(event.target.value) || 1,
+                }))
+              }
+            />
+          </div>
         </div>
-        <select className="jobs-select" value={department} onChange={e => setDepartment(e.target.value)}>
-          {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
-        </select>
-        <select className="jobs-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-          <option value="postedDate">Sort: Posted Date</option>
-          <option value="applicants">Sort: Applicants</option>
-          <option value="offered">Sort: Offers</option>
-          <option value="company">Sort: Company A–Z</option>
-          <option value="ctc">Sort: CTC</option>
-        </select>
-      </div>
+      </Card>
 
-      {/* ── Tabs ── */}
-      <div className="jobs-tabs">
-        {TABS.map(tab => (
-          <button
-            key={tab}
-            className={`jobs-tab${activeTab === tab ? ' active' : ''}`}
-            onClick={() => setActiveTab(tab)}
+      <Card title="Filters" className="jobs-simple-filter-card">
+        <div className="jobs-simple-filters">
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Search company, role, or contact person"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
+          <select
+            className="form-input"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
           >
-            {tab} <span className="tab-count">{tabCount(tab)}</span>
-          </button>
-        ))}
-        <span className="results-count">{filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found</span>
-      </div>
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </Card>
 
-      {/* ── Table ── */}
-      <div className="jobs-table-wrap">
-        <table className="jobs-table">
-          <thead>
-            <tr>
-              <th className="sortable" onClick={() => handleSort('company')}>Company{sortIcon('company')}</th>
-              <th className="sortable" onClick={() => handleSort('position')}>Position{sortIcon('position')}</th>
-              <th>Dept / Type</th>
-              <th className="sortable" onClick={() => handleSort('postedDate')}>Posted{sortIcon('postedDate')}</th>
-              <th>Deadline</th>
-              <th className="sortable" onClick={() => handleSort('ctc')}>CTC{sortIcon('ctc')}</th>
-              <th className="sortable" onClick={() => handleSort('applicants')}>Applied{sortIcon('applicants')}</th>
-              <th>Pipeline</th>
-              <th className="sortable" onClick={() => handleSort('offered')}>Offers{sortIcon('offered')}</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredJobs.length === 0 ? (
+      <Card title="Company Requests" className="jobs-simple-table-card">
+        <div className="jobs-table-scroll">
+          <table className="jobs-simple-table">
+            <thead>
               <tr>
-                <td colSpan={11} className="no-results">
-                  <div className="no-results-inner">
-                    <div className="no-results-icon"><MdSearch size={44} /></div>
-                    <p>No jobs found matching your filters.</p>
-                    <button className="jm-btn-outlined" onClick={() => { setSearch(''); setActiveTab('All'); setDepartment('All Departments'); }}>Clear Filters</button>
-                  </div>
-                </td>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Openings</th>
+                <th>Skills Required</th>
+                <th>Bond</th>
+                <th>Contact Person</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ) : filteredJobs.map(job => (
-              <tr key={job.id} className="job-row" onClick={() => setSelectedJob(job)}>
+            </thead>
+            <tbody>
+              {filteredRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="no-company-row">
+                    No company requests match current filters.
+                  </td>
+                </tr>
+              ) : (
+                filteredRequests.map((request) => (
+                  <tr key={request.id}>
+                    <td>
+                      <strong>{request.company}</strong>
+                      <p>{request.location}</p>
+                    </td>
+                    <td>
+                      <strong>{request.position}</strong>
+                      <p>CTC: {request.ctc}</p>
+                    </td>
+                    <td>{request.openings}</td>
+                    <td>
+                      <div className="skills-list">
+                        {request.skills.map((skill) => (
+                          <span key={`${request.id}-${skill}`} className="skill-chip">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      {request.bondDurationMonths > 0
+                        ? `${request.bondDurationMonths} months`
+                        : 'No bond'}
+                    </td>
+                    <td>
+                      <strong>{request.contactName}</strong>
+                      <p>{request.contactRole}</p>
+                    </td>
+                    <td>
+                      <span className={`status-pill ${getStatusClass(request.approvalStatus)}`}>
+                        {getStatusLabel(request.approvalStatus)}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="jobs-action-group">
+                        <button type="button" className="btn btn-outlined btn-small" onClick={() => openCompanyDetails(request)}>
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-small"
+                          onClick={() => handleApprovalChange(request.id, 'approved')}
+                          disabled={request.approvalStatus === 'approved'}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-small"
+                          onClick={() => handleApprovalChange(request.id, 'rejected')}
+                          disabled={request.approvalStatus === 'rejected'}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
-                {/* Company */}
-                <td>
-                  <div className="company-cell">
-                    <div className="co-logo" style={{ background: job.logoColor + '22', color: job.logoColor }}>
-                      {job.companyLogo}
-                    </div>
-                    <span className="co-name">{job.company}</span>
-                  </div>
-                </td>
-
-                {/* Position */}
-                <td>
-                  <div className="pos-cell">
-                    <span className="pos-title">{job.position}</span>
-                    <span className="pos-loc">
-                      <MdLocationOn size={13} style={{ verticalAlign: 'middle', marginRight: 2 }} />
-                      {job.location}
-                    </span>
-                  </div>
-                </td>
-
-                {/* Dept / Type */}
-                <td>
-                  <div className="dept-cell">
-                    {job.department.slice(0, 2).map(d => <span key={d} className="dept-tag">{d}</span>)}
-                    {job.department.length > 2 && <span className="dept-tag more">+{job.department.length - 2}</span>}
-                    <span className="type-tag">{job.type}</span>
-                  </div>
-                </td>
-
-                {/* Dates */}
-                <td className="date-cell">{fmt(job.postedDate)}</td>
-                <td>
-                  <span className={`deadl ${new Date(job.deadline) < new Date() && job.status !== 'upcoming' ? 'expired' : ''}`}>
-                    {fmt(job.deadline)}
-                  </span>
-                </td>
-
-                {/* CTC */}
-                <td className="ctc-cell">{job.ctc}</td>
-
-                {/* Applied count */}
-                <td className="count-cell">{job.applicants}</td>
-
-                {/* Pipeline mini-chart */}
-                <td>
-                  <div className="pipeline-cell">
-                    <div className="pipeline-row">
-                      <span className="pl-label">Applied</span>
-                      <div className="pl-track"><div className="pl-bar pl-applied" style={{ width: '100%' }} /></div>
-                      <span className="pl-num">{job.applicants}</span>
-                    </div>
-                    <div className="pipeline-row">
-                      <span className="pl-label">Shortlisted</span>
-                      <div className="pl-track"><div className="pl-bar pl-short" style={{ width: `${pct(job.shortlisted, job.applicants)}%` }} /></div>
-                      <span className="pl-num">{job.shortlisted}</span>
-                    </div>
-                    <div className="pipeline-row">
-                      <span className="pl-label">Offered</span>
-                      <div className="pl-track"><div className="pl-bar pl-offer" style={{ width: `${pct(job.offered, job.applicants)}%` }} /></div>
-                      <span className="pl-num">{job.offered}</span>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Offers */}
-                <td>
-                  <div className="offer-cell">
-                    <span className="offer-num">{job.offered}</span>
-                    <span className="offer-rate">{pct(job.offered, job.applicants)}%</span>
-                  </div>
-                </td>
-
-                {/* Status */}
-                <td>
-                  <span
-                    className="status-badge"
-                    style={{ color: STATUS_CONFIG[job.status].color, background: STATUS_CONFIG[job.status].bg }}
-                  >
-                    {STATUS_CONFIG[job.status].label}
-                  </span>
-                </td>
-
-                {/* Actions */}
-                <td onClick={e => e.stopPropagation()}>
-                  <div className="action-btns">
-                    <button className="act-btn view" title="View Details" onClick={() => setSelectedJob(job)}>
-                      <MdVisibility size={15} />
-                    </button>
-                    <button className="act-btn edit" title="Edit Job">
-                      <MdEdit size={15} />
-                    </button>
-                    <button className="act-btn apps" title="View Applicants">
-                      <MdGroup size={15} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ══════════ Job Detail Modal ══════════ */}
-      {selectedJob && (
-        <div className="jm-overlay" onClick={() => setSelectedJob(null)}>
-          <div className="jm-modal" onClick={e => e.stopPropagation()}>
-
-            {/* Modal Header */}
-            <div className="jm-modal-head" style={{ borderBottom: `3px solid ${selectedJob.logoColor}` }}>
-              <div className="jm-head-row">
-                <div className="jm-modal-logo" style={{ background: selectedJob.logoColor + '22', color: selectedJob.logoColor }}>
-                  {selectedJob.companyLogo}
-                </div>
-                <div className="jm-head-text">
-                  <h2>{selectedJob.position}</h2>
-                  <p>{selectedJob.company} &nbsp;·&nbsp; {selectedJob.location} &nbsp;·&nbsp; {selectedJob.type}</p>
-                </div>
-                <span
-                  className="status-badge"
-                  style={{ color: STATUS_CONFIG[selectedJob.status].color, background: STATUS_CONFIG[selectedJob.status].bg, marginLeft: 'auto', marginRight: '2.5rem' }}
-                >
-                  {STATUS_CONFIG[selectedJob.status].label}
-                </span>
+      <Modal
+        isOpen={!!selectedCompany}
+        title={selectedCompany ? `${selectedCompany.company} - Company Details` : 'Company Details'}
+        onClose={() => {
+          setSelectedCompany(null);
+          setEditDraft(null);
+        }}
+        closeText="Close"
+      >
+        {selectedCompany && editDraft && (
+          <div className="company-detail-modal">
+            <div className="detail-grid">
+              <div className="detail-item">
+                <span>Position</span>
+                <strong>{selectedCompany.position}</strong>
               </div>
-              <button className="jm-modal-close" onClick={() => setSelectedJob(null)}>
-                <MdClose size={18} />
-              </button>
+              <div className="detail-item">
+                <span>Openings</span>
+                <input
+                  type="number"
+                  className="form-input"
+                  min="1"
+                  value={editDraft.openings}
+                  onChange={(event) => handleDraftValueChange('openings', event.target.value)}
+                />
+              </div>
+              <div className="detail-item">
+                <span>CTC</span>
+                <strong>{selectedCompany.ctc}</strong>
+              </div>
+              <div className="detail-item">
+                <span>Minimum CGPA</span>
+                <input
+                  type="number"
+                  className="form-input"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={editDraft.minCGPA}
+                  onChange={(event) => handleDraftValueChange('minCGPA', event.target.value)}
+                />
+              </div>
+              <div className="detail-item">
+                <span>Drive Date</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={editDraft.driveDate}
+                  onChange={(event) => handleDraftValueChange('driveDate', event.target.value)}
+                />
+              </div>
+              <div className="detail-item">
+                <span>Application Deadline</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={editDraft.deadline}
+                  onChange={(event) => handleDraftValueChange('deadline', event.target.value)}
+                />
+              </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="jm-modal-body">
-
-              {/* Quick Eligibility Stats */}
-              <div className="jm-quick-stats">
-                {[
-                  { label: 'CTC Package',   value: selectedJob.ctc,                         color: '#2FBF71'             },
-                  { label: 'Min CGPA',      value: selectedJob.minCGPA,                     color: 'var(--primary-color)' },
-                  { label: 'Backlogs',      value: selectedJob.backlogsAllowed ? 'Allowed' : 'Not Allowed', color: selectedJob.backlogsAllowed ? '#059669' : '#DC2626' },
-                  { label: 'Deadline',      value: fmt(selectedJob.deadline),               color: 'var(--text-color)'    },
-                  { label: 'Posted On',     value: fmt(selectedJob.postedDate),             color: 'var(--text-color)'    },
-                  { label: 'Interview Rounds', value: selectedJob.rounds.length + ' rounds', color: 'var(--primary-color)' },
-                ].map(s => (
-                  <div key={s.label} className="qs-item">
-                    <span className="qs-label">{s.label}</span>
-                    <span className="qs-value" style={{ color: s.color }}>{s.value}</span>
-                  </div>
+            <div className="detail-block">
+              <h4>Required Skills</h4>
+              <div className="skills-list">
+                {selectedCompany.skills.map((skill) => (
+                  <span key={`modal-${skill}`} className="skill-chip">
+                    {skill}
+                  </span>
                 ))}
               </div>
+            </div>
 
-              {/* Placement Funnel */}
-              <div className="jm-section">
-                <h4><MdBarChart size={16} style={{ verticalAlign: 'middle', marginRight: 5 }} />Placement Funnel</h4>
-                <div className="modal-funnel">
-                  {[
-                    { label: 'Applied',      value: selectedJob.applicants,  color: '#5A77DF' },
-                    { label: 'Shortlisted',  value: selectedJob.shortlisted, color: '#F39C12' },
-                    { label: 'Interviewed',  value: selectedJob.interviewed, color: '#9B59B6' },
-                    { label: 'Offered',      value: selectedJob.offered,     color: '#2FBF71' },
-                    { label: 'Joined',       value: selectedJob.joined,      color: '#1ABC9C' },
-                  ].map(step => (
-                    <div key={step.label} className="mf-step">
-                      <div className="mf-step-info">
-                        <span className="mf-step-label">{step.label}</span>
-                        <span className="mf-step-num" style={{ color: step.color }}>{step.value}</span>
-                        <span className="mf-step-pct">{pct(step.value, selectedJob.applicants)}%</span>
-                      </div>
-                      <div className="mf-track">
-                        <div
-                          className="mf-bar"
-                          style={{
-                            width: selectedJob.applicants > 0
-                              ? `${Math.max(parseFloat(pct(step.value, selectedJob.applicants)), 1)}%`
-                              : '1%',
-                            background: step.color,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="detail-block">
+              <h4>Bond Details</h4>
+              <textarea
+                className="form-input"
+                rows={2}
+                value={editDraft.bondDetails}
+                onChange={(event) => handleDraftValueChange('bondDetails', event.target.value)}
+              />
+            </div>
 
-              {/* Two-col: Departments + Rounds */}
-              <div className="jm-two-col">
-                <div className="jm-section">
-                  <h4><MdSchool size={16} style={{ verticalAlign: 'middle', marginRight: 5 }} />Eligible Departments</h4>
-                  <div className="modal-dept-tags">
-                    {selectedJob.department.map(d => (
-                      <span key={d} className="dept-tag-lg">{d}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="jm-section">
-                  <h4><MdRepeat size={16} style={{ verticalAlign: 'middle', marginRight: 5 }} />Interview Rounds</h4>
-                  <div className="rounds-list">
-                    {selectedJob.rounds.map((r, i) => (
-                      <div key={i} className="round-item">
-                        <span className="round-num">{i + 1}</span>
-                        <span className="round-name">{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="jm-section">
-                <h4><MdDescription size={16} style={{ verticalAlign: 'middle', marginRight: 5 }} />About the Role</h4>
-                <p className="jm-desc">{selectedJob.description}</p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="jm-modal-actions">
-                <button className="jm-btn-primary">View Applicants</button>
-                <button className="jm-btn-outlined">Edit Eligibility</button>
-                <button className="jm-btn-outlined">Export Data</button>
-                {selectedJob.status === 'active' && (
-                  <button className="jm-btn-danger">Close Job</button>
-                )}
-                {selectedJob.status === 'paused' && (
-                  <button className="jm-btn-success">Resume Job</button>
-                )}
+            <div className="detail-block">
+              <h4>Company Contact Person</h4>
+              <div className="contact-edit-grid">
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editDraft.contactName}
+                  onChange={(event) => handleDraftValueChange('contactName', event.target.value)}
+                  placeholder="Contact name"
+                />
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editDraft.contactRole}
+                  onChange={(event) => handleDraftValueChange('contactRole', event.target.value)}
+                  placeholder="Contact role"
+                />
+                <input
+                  type="email"
+                  className="form-input"
+                  value={editDraft.contactEmail}
+                  onChange={(event) => handleDraftValueChange('contactEmail', event.target.value)}
+                  placeholder="Contact email"
+                />
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editDraft.contactPhone}
+                  onChange={(event) => handleDraftValueChange('contactPhone', event.target.value)}
+                  placeholder="Contact phone"
+                />
               </div>
             </div>
+
+            <div className="detail-block">
+              <h4>Student Required PDFs (For TPO Verification)</h4>
+              <p className="detail-note">Select the PDFs that students must provide while applying.</p>
+              <div className="doc-check-grid">
+                {BASE_REQUIRED_DOCUMENTS.map((documentName) => {
+                  const checked = editDraft.requiredDocuments.includes(documentName);
+                  return (
+                    <label key={documentName} className="doc-check-item">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleDocumentToggle(documentName)}
+                      />
+                      {documentName}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="detail-block">
+              <h4>Additional Company Notice (Optional)</h4>
+              <textarea
+                className="form-input"
+                rows={3}
+                placeholder="Add custom instructions or notice for this company."
+                value={editDraft.tpoExtraNotice}
+                onChange={(event) => handleDraftValueChange('tpoExtraNotice', event.target.value)}
+              />
+            </div>
+
+            <div className="detail-block">
+              <h4>Selection Process</h4>
+              <ol>
+                {selectedCompany.selectionProcess.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            </div>
+
+            <div className="detail-block">
+              <h4>Company Brief</h4>
+              <p>{selectedCompany.description}</p>
+            </div>
+
+            <div className="modal-actions-inline">
+              <button type="button" className="btn btn-primary" onClick={handleSaveCompanyEdits}>
+                Save Company Updates
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   MdDashboard, MdPerson, MdWork, MdAssignment, MdInsights,
-  MdSchool, MdPeople, MdSettings, MdAnalytics, MdAdd,
+  MdSchool, MdPeople, MdAnalytics, MdAdd, MdMenuBook,
   MdCardGiftcard
 } from 'react-icons/md';
 import './Sidebar.css';
@@ -31,8 +31,8 @@ const Sidebar = () => {
         { label: 'Dashboard', path: '/tpo/dashboard', icon: MdDashboard },
         { label: 'Students', path: '/tpo/students', icon: MdPeople },
         { label: 'Jobs', path: '/tpo/jobs', icon: MdWork },
+        { label: 'Materials', path: '/tpo/materials', icon: MdMenuBook },
         { label: 'Applications', path: '/tpo/applications', icon: MdAssignment },
-        { label: 'Eligibility Rules', path: '/tpo/eligibility', icon: MdSettings },
         { label: 'Analytics', path: '/tpo/analytics', icon: MdAnalytics },
       ];
     }

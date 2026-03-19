@@ -24,9 +24,9 @@ import StudentPreparation from './pages/student/StudentPreparation';
 import TPODashboard from './pages/tpo/TPODashboard';
 import TPOStudents from './pages/tpo/TPOStudents';
 import TPOJobs from './pages/tpo/TPOJobs';
-import TPOEligibility from './pages/tpo/TPOEligibility';
 import TPOApplications from './pages/tpo/TPOApplications';
 import TPOAnalytics from './pages/tpo/TPOAnalytics';
+import TPOMaterials from './pages/tpo/TPOMaterials';
 
 // Recruiter Pages
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
@@ -43,14 +43,15 @@ function App() {
   const { isAuthenticated, user } = useAuth();
 
   const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+  const hasSidebar = isAuthenticated && !isAuthPage;
 
   return (
     <Router>
-      <div className="app">
+      <div className={`app ${isAuthPage ? 'auth-layout' : ''} ${hasSidebar ? 'has-sidebar' : ''}`}>
         {!isAuthPage && <Navbar />}
-        <div className="app-container">
-          {isAuthenticated && !isAuthPage && <Sidebar />}
-          <main className="main-content">
+        <div className={`app-container ${isAuthPage ? 'auth-app-container' : ''}`}>
+          {hasSidebar && <Sidebar />}
+          <main className={`main-content ${isAuthPage ? 'auth-main-content' : ''}`}>
             <Routes>
               {/* Auth Routes */}
               <Route path="/login" element={<Login />} />
@@ -68,8 +69,8 @@ function App() {
               <Route path="/tpo/dashboard" element={<ProtectedRoute requiredRole="tpo"><TPODashboard /></ProtectedRoute>} />
               <Route path="/tpo/students" element={<ProtectedRoute requiredRole="tpo"><TPOStudents /></ProtectedRoute>} />
               <Route path="/tpo/jobs" element={<ProtectedRoute requiredRole="tpo"><TPOJobs /></ProtectedRoute>} />
+              <Route path="/tpo/materials" element={<ProtectedRoute requiredRole="tpo"><TPOMaterials /></ProtectedRoute>} />
               <Route path="/tpo/applications" element={<ProtectedRoute requiredRole="tpo"><TPOApplications /></ProtectedRoute>} />
-              <Route path="/tpo/eligibility" element={<ProtectedRoute requiredRole="tpo"><TPOEligibility /></ProtectedRoute>} />
               <Route path="/tpo/analytics" element={<ProtectedRoute requiredRole="tpo"><TPOAnalytics /></ProtectedRoute>} />
 
               {/* Recruiter Routes */}

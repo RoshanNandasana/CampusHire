@@ -16,6 +16,17 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const resolveRecruiterCompany = (email) => {
+    const id = email.toLowerCase();
+    if (id.includes('technova') || id.includes('recruiter')) {
+      return { companyId: 'TECHNOVA', companyName: 'TechNova Systems' };
+    }
+    if (id.includes('dataspring') || id.includes('ds')) {
+      return { companyId: 'DATASPRING', companyName: 'DataSpring Labs' };
+    }
+    return { companyId: 'DEFAULT', companyName: 'Recruiter Company' };
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -57,6 +68,13 @@ const Register = () => {
         role: formData.role,
         token: 'demo-token-' + Math.random().toString(36).substr(2, 9),
       };
+
+      if (formData.role === 'recruiter') {
+        const companyMeta = resolveRecruiterCompany(formData.email);
+        user.recruiterId = formData.email.toLowerCase();
+        user.companyId = companyMeta.companyId;
+        user.companyName = companyMeta.companyName;
+      }
 
       register(user);
 

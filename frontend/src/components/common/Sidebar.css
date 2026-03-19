@@ -1,15 +1,16 @@
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #323954 0%, #2a3048 100%);
+  background: #2a3048;
   color: white;
   height: calc(100dvh - 64px);
   position: fixed;
   top: 64px;
   left: 0;
+  z-index: 90;
   overflow: hidden;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: 1.25rem 0 1rem;
-  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+  border-radius: 0;
   box-shadow: var(--shadow-soft);
 }
 

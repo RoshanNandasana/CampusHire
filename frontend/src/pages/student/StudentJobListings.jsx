@@ -1,180 +1,343 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import StudentTopPanel from '../../components/student/StudentTopPanel';
 import './StudentJobListings.css';
 
+const STUDENT_JOBS_STORAGE_KEY = 'campusHireApprovedStudentJobs';
+
+const DEFAULT_JOBS = [
+  {
+    id: 1,
+    company: 'Google',
+    position: 'Software Engineer',
+    description: 'Looking for talented software engineers to join our team.',
+    minCGPA: 7.5,
+    skills: ['Python', 'JavaScript', 'DSA'],
+    ctc: '20 LPA',
+    locations: ['Bangalore', 'Hyderabad'],
+    deadline: '2026-04-20',
+    bondAgreement: {
+      required: true,
+      durationMonths: 12,
+      details: 'One-year service bond with early exit fee as per company policy.',
+    },
+    selectionProcess: ['Online assessment', 'Technical interviews', 'HR interview'],
+    documents: [
+      { label: 'Role Description PDF', url: '#', type: 'PDF' },
+      { label: 'Bond Agreement PDF', url: '#', type: 'PDF' },
+      { label: 'Eligibility Rules PDF', url: '#', type: 'PDF' },
+    ],
+    tpoNote: 'Approved by TPO for 2026 CSE batch. Carry updated resume and transcript.',
+    tpoCoordinator: 'Dr. R. Sharma',
+  },
+  {
+    id: 2,
+    company: 'Microsoft',
+    position: 'Product Manager',
+    description: 'Seeking product managers for cloud and enterprise solutions.',
+    minCGPA: 7.0,
+    skills: ['Analytics', 'Communication', 'Leadership'],
+    ctc: '18 LPA',
+    locations: ['Pune'],
+    deadline: '2026-04-18',
+    bondAgreement: {
+      required: false,
+      durationMonths: 0,
+      details: 'No service bond required.',
+    },
+    selectionProcess: ['Case study', 'Panel interview', 'HR interview'],
+    documents: [
+      { label: 'Job Description PDF', url: '#', type: 'PDF' },
+      { label: 'Interview Process PDF', url: '#', type: 'PDF' },
+    ],
+    tpoNote: 'Open for students with product case-study completion certificate.',
+    tpoCoordinator: 'Prof. Neha Soni',
+  },
+  {
+    id: 3,
+    company: 'Amazon',
+    position: 'Data Engineer',
+    description: 'Help build scalable data solutions at Amazon.',
+    minCGPA: 6.5,
+    skills: ['SQL', 'Python', 'Spark'],
+    ctc: '16 LPA',
+    locations: ['Bangalore'],
+    deadline: '2026-04-24',
+    bondAgreement: {
+      required: true,
+      durationMonths: 18,
+      details: '18-month bond with relocation terms as per offer letter.',
+    },
+    selectionProcess: ['Coding test', 'Technical interviews', 'HR interview'],
+    documents: [
+      { label: 'Role Description PDF', url: '#', type: 'PDF' },
+      { label: 'Bond Terms PDF', url: '#', type: 'PDF' },
+      { label: 'Data Engineer Round Guide PDF', url: '#', type: 'PDF' },
+    ],
+    tpoNote: 'Interview prep workshop mandatory before shortlist release.',
+    tpoCoordinator: 'Dr. R. Sharma',
+  },
+  {
+    id: 4,
+    company: 'TCS',
+    position: 'Systems Engineer',
+    description: 'Join our global IT services team.',
+    minCGPA: 6.0,
+    skills: ['Java', 'SQL', 'OOPS'],
+    ctc: '8 LPA',
+    locations: ['Multiple'],
+    deadline: '2026-04-14',
+    bondAgreement: {
+      required: true,
+      durationMonths: 24,
+      details: 'Two-year service bond with training recovery clause.',
+    },
+    selectionProcess: ['Aptitude test', 'Technical interview', 'HR interview'],
+    documents: [
+      { label: 'Service Bond PDF', url: '#', type: 'PDF' },
+      { label: 'Role Overview PDF', url: '#', type: 'PDF' },
+    ],
+    tpoNote: 'Mass recruiter drive. Document verification by TPO is required first.',
+    tpoCoordinator: 'Prof. Rahul Desai',
+  },
+];
+
 const StudentJobListings = () => {
   const [selectedJob, setSelectedJob] = useState(null);
+  const [modalStep, setModalStep] = useState('details');
+  const [applicationMessage, setApplicationMessage] = useState('');
   const [filters, setFilters] = useState({
-    companyName: '',
-    minCGPA: 5.0,
     searchQuery: '',
+    companyName: 'all',
+    location: 'all',
+    skill: 'all',
+    minCtc: 0,
   });
 
-  const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString();
+  const [jobs] = useState(() => {
+    const storedJobs = localStorage.getItem(STUDENT_JOBS_STORAGE_KEY);
+    if (storedJobs) {
+      try {
+        const parsedJobs = JSON.parse(storedJobs);
+        if (Array.isArray(parsedJobs) && parsedJobs.length > 0) {
+          return parsedJobs;
+        }
+      } catch (error) {
+        return DEFAULT_JOBS;
+      }
+    }
+    return DEFAULT_JOBS;
+  });
 
-  const [jobs] = useState([
-    {
-      id: 1,
-      company: 'Google',
-      position: 'Software Engineer',
-      description: 'Looking for talented software engineers to join our team.',
-      minCGPA: 7.5,
-      skills: ['Python', 'JavaScript', 'DSA'],
-      ctc: '20 LPA',
-      locations: ['Bangalore', 'Hyderabad'],
-      deadline: '2024-02-28',
-      bondAgreement: {
-        required: true,
-        durationMonths: 12,
-        details: 'One-year service bond with early exit fee as per company policy.',
-      },
-      requirements: [
-        'Strong DSA fundamentals',
-        'Problem-solving round (2)',
-        'System design basics',
-      ],
-      documents: [
-        { label: 'Role Description (PDF)', url: '#' },
-        { label: 'Bond Agreement (PDF)', url: '#' },
-      ],
-      selectionProcess: ['Online assessment', 'Technical interviews', 'HR interview'],
-      tpoNote: 'Approved by TPO for 2024 CSE batch. Carry updated resume and transcript.',
-      tpoCoordinator: 'Dr. R. Sharma',
-    },
-    {
-      id: 2,
-      company: 'Microsoft',
-      position: 'Product Manager',
-      description: 'Seeking experienced product managers for our cloud division.',
-      minCGPA: 7.0,
-      skills: ['AWS', 'Leadership', 'Analytics'],
-      ctc: '18 LPA',
-      locations: ['Pune'],
-      deadline: '2024-02-25',
-      bondAgreement: {
-        required: false,
-        durationMonths: 0,
-        details: 'No service bond required.',
-      },
-      requirements: [
-        'Product case study',
-        'Analytics round',
-        'Stakeholder management interview',
-      ],
-      documents: [
-        { label: 'Job Description (PDF)', url: '#' },
-      ],
-      selectionProcess: ['Case study', 'Panel interview', 'HR interview'],
-      tpoNote: 'Open for students with Product case-study completion certificate.',
-      tpoCoordinator: 'Prof. Neha Soni',
-    },
-    {
-      id: 3,
-      company: 'Amazon',
-      position: 'Data Engineer',
-      description: 'Help build scalable data solutions at Amazon.',
-      minCGPA: 6.5,
-      skills: ['SQL', 'Python', 'Spark'],
-      ctc: '16 LPA',
-      locations: ['Bangalore'],
-      deadline: '2024-03-05',
-      bondAgreement: {
-        required: true,
-        durationMonths: 18,
-        details: '18-month bond with relocation terms as per offer letter.',
-      },
-      requirements: [
-        'SQL + Python coding round',
-        'Data modeling interview',
-        'ETL pipeline discussion',
-      ],
-      documents: [
-        { label: 'Offer Terms (PDF)', url: '#' },
-        { label: 'Bond Agreement (PDF)', url: '#' },
-      ],
-      selectionProcess: ['Coding test', 'Technical interviews', 'HR interview'],
-      tpoNote: 'Interview prep workshop mandatory before shortlist release.',
-      tpoCoordinator: 'Dr. R. Sharma',
-    },
-    {
-      id: 4,
-      company: 'TCS',
-      position: 'Systems Engineer',
-      description: 'Join our global IT services team.',
-      minCGPA: 6.0,
-      skills: ['Java', 'SQL', 'OOPS'],
-      ctc: '8 LPA',
-      locations: ['Multiple'],
-      deadline: '2024-02-20',
-      bondAgreement: {
-        required: true,
-        durationMonths: 24,
-        details: 'Two-year service bond with training recovery clause.',
-      },
-      requirements: [
-        'Aptitude test',
-        'Technical + HR interview',
-      ],
-      documents: [
-        { label: 'Service Bond (PDF)', url: '#' },
-        { label: 'Role Overview (PDF)', url: '#' },
-      ],
-      selectionProcess: ['Aptitude test', 'Technical interview', 'HR interview'],
-      tpoNote: 'Mass recruiter drive. Document verification by TPO is required first.',
-      tpoCoordinator: 'Prof. Rahul Desai',
-    },
-  ]);
+  const [applyDraft, setApplyDraft] = useState({
+    fullName: 'John Doe',
+    collegeEmail: 'john.doe@college.edu',
+    phone: '+91 98765 43210',
+    cgpa: '8.2',
+    resumeFile: 'john_doe_resume.pdf',
+    tenthMarksheetFile: 'class_10_marksheet.pdf',
+    twelfthMarksheetFile: 'class_12_marksheet.pdf',
+    graduationMarksheetFile: 'latest_sem_marksheet.pdf',
+    note: '',
+    declarationAccepted: false,
+  });
+
+  const profileDefaults = useMemo(
+    () => ({
+      fullName: 'John Doe',
+      collegeEmail: 'john.doe@college.edu',
+      phone: '+91 98765 43210',
+      cgpa: '8.2',
+      resumeFile: 'john_doe_resume.pdf',
+      tenthMarksheetFile: 'class_10_marksheet.pdf',
+      twelfthMarksheetFile: 'class_12_marksheet.pdf',
+      graduationMarksheetFile: 'latest_sem_marksheet.pdf',
+      note: '',
+      declarationAccepted: false,
+    }),
+    []
+  );
+
+  const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString();
+  const parseLpa = (ctc) => Number(ctc.replace(' LPA', ''));
+
+  const companyOptions = useMemo(
+    () => [...new Set(jobs.map((job) => job.company))],
+    [jobs]
+  );
+
+  const locationOptions = useMemo(
+    () => [...new Set(jobs.flatMap((job) => job.locations))],
+    [jobs]
+  );
+
+  const skillOptions = useMemo(
+    () => [...new Set(jobs.flatMap((job) => job.skills))],
+    [jobs]
+  );
 
   const filteredJobs = jobs.filter((job) => {
-    const meetsMinCGPA = 8.2 >= job.minCGPA; // User's CGPA is 8.2
+    const userCgpa = 8.2;
+    const eligibleCgpa = userCgpa >= job.minCGPA;
     const matchesSearch =
       job.company.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
       job.position.toLowerCase().includes(filters.searchQuery.toLowerCase());
-    return meetsMinCGPA && matchesSearch;
+    const matchesCompany = filters.companyName === 'all' || job.company === filters.companyName;
+    const matchesLocation =
+      filters.location === 'all' || job.locations.includes(filters.location);
+    const matchesSkill = filters.skill === 'all' || job.skills.includes(filters.skill);
+    const matchesCtc = parseLpa(job.ctc) >= Number(filters.minCtc);
+
+    return eligibleCgpa && matchesSearch && matchesCompany && matchesLocation && matchesSkill && matchesCtc;
   });
 
-  const isEligible = (job) => {
-    return 8.2 >= job.minCGPA;
+  const isEligible = (job) => 8.2 >= job.minCGPA;
+
+  const handleOpenApply = (job) => {
+    setSelectedJob(job);
+    setModalStep('details');
+    setApplyDraft(profileDefaults);
+    setApplicationMessage('');
+  };
+
+  const handleReplaceFile = (field, event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setApplyDraft((prev) => ({ ...prev, [field]: file.name }));
+  };
+
+  const resetToPrefilled = () => {
+    setApplyDraft(profileDefaults);
   };
 
   const handleApply = () => {
-    alert(`Applied to ${selectedJob.position} at ${selectedJob.company}!`);
-    setSelectedJob(null);
+    if (!applyDraft.resumeFile || !applyDraft.graduationMarksheetFile) {
+      setApplicationMessage('Resume and graduation marksheet are required to apply.');
+      return;
+    }
+
+    if (!applyDraft.declarationAccepted) {
+      setApplicationMessage('Please verify and accept declaration before applying.');
+      return;
+    }
+
+    setApplicationMessage('Application submitted successfully with verified profile documents.');
+    setTimeout(() => {
+      setSelectedJob(null);
+      setApplicationMessage('');
+    }, 800);
+  };
+
+  const handleModalConfirm = () => {
+    if (modalStep === 'details') {
+      setModalStep('apply');
+      return;
+    }
+    handleApply();
+  };
+
+  const handleFilterReset = () => {
+    setFilters({
+      searchQuery: '',
+      companyName: 'all',
+      location: 'all',
+      skill: 'all',
+      minCtc: 0,
+    });
   };
 
   return (
     <div className="job-listings">
       <StudentTopPanel
         title="Available Job Openings"
-        subtitle="Explore recruiter jobs with complete TPO eligibility, coordinator, and policy visibility."
+        subtitle="Filter quickly, verify profile documents, and apply with prefilled data in one flow."
         kicker="Student Jobs"
         stats={[
           { label: 'Eligible Jobs', value: filteredJobs.length },
           { label: 'Profile CGPA', value: '8.2' },
-          { label: 'Current Cycle', value: '2024' },
-          { label: 'Filters Applied', value: filters.searchQuery ? '1' : '0' },
-        ]}
-        tpoUpdates={[
-          'TPO rule: Min CGPA eligibility applies before apply button',
-          'All drives require verified academic records',
-          'Coordinator details are shown in each job detail panel',
-          'Policy notes from TPO are visible per company posting',
+          { label: 'Current Cycle', value: '2026' },
+          { label: 'Filters Applied', value: Object.values(filters).some((value) => value && value !== 'all' && value !== 0) ? 'Yes' : 'No' },
         ]}
       />
 
-      <Card title="Filter Jobs" className="filter-card">
-        <div className="filter-grid">
+      <Card title="Smart Filters" className="filter-card colorful-filter-card">
+        <div className="filter-grid enhanced-filter-grid">
           <div className="filter-group">
-            <label>Search by Company or Position</label>
+            <label>Search Job</label>
             <input
               type="text"
               value={filters.searchQuery}
               onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
-              placeholder="Search..."
+              placeholder="Company or position"
               className="form-input"
             />
+          </div>
+
+          <div className="filter-group">
+            <label>Company</label>
+            <select
+              className="form-input"
+              value={filters.companyName}
+              onChange={(e) => setFilters({ ...filters, companyName: e.target.value })}
+            >
+              <option value="all">All Companies</option>
+              {companyOptions.map((company) => (
+                <option key={company} value={company}>
+                  {company}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Location</label>
+            <select
+              className="form-input"
+              value={filters.location}
+              onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+            >
+              <option value="all">All Locations</option>
+              {locationOptions.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Skill</label>
+            <select
+              className="form-input"
+              value={filters.skill}
+              onChange={(e) => setFilters({ ...filters, skill: e.target.value })}
+            >
+              <option value="all">All Skills</option>
+              {skillOptions.map((skill) => (
+                <option key={skill} value={skill}>
+                  {skill}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Minimum CTC (LPA)</label>
+            <input
+              type="number"
+              min="0"
+              max="50"
+              className="form-input"
+              value={filters.minCtc}
+              onChange={(e) => setFilters({ ...filters, minCtc: Number(e.target.value) || 0 })}
+            />
+          </div>
+
+          <div className="filter-group filter-action-group">
+            <button type="button" className="btn btn-outlined filter-reset-btn" onClick={handleFilterReset}>
+              Reset Filters
+            </button>
           </div>
         </div>
       </Card>
@@ -212,8 +375,8 @@ const StudentJobListings = () => {
             </div>
 
             <div className="job-chips">
-              {job.skills.slice(0, 2).map((skill, index) => (
-                <span key={index} className="chip">
+              {job.skills.slice(0, 2).map((skill) => (
+                <span key={skill} className="chip">
                   {skill}
                 </span>
               ))}
@@ -224,7 +387,7 @@ const StudentJobListings = () => {
 
             <button
               className="btn btn-primary btn-small btn-full"
-              onClick={() => setSelectedJob(job)}
+              onClick={() => handleOpenApply(job)}
               disabled={!isEligible(job)}
             >
               View & Apply
@@ -235,105 +398,203 @@ const StudentJobListings = () => {
 
       <Modal
         isOpen={!!selectedJob}
-        title={selectedJob?.position}
-        onClose={() => setSelectedJob(null)}
-        onConfirm={handleApply}
-        confirmText="Apply Now"
+        title={selectedJob ? `${selectedJob.position} - Apply` : 'Apply'}
+        onClose={() => {
+          setSelectedJob(null);
+          setModalStep('details');
+        }}
+        onConfirm={handleModalConfirm}
+        confirmText={modalStep === 'details' ? 'Continue to Apply' : 'Verify & Apply'}
       >
         {selectedJob && (
-          <div className="job-detail-modal">
-            <div className="modal-section">
-              <h4>Company</h4>
-              <p>{selectedJob.company}</p>
+          <div className="job-detail-modal enhanced-job-modal">
+            <div className="modal-step-tabs">
+              <button
+                type="button"
+                className={`step-tab ${modalStep === 'details' ? 'active' : ''}`}
+                onClick={() => setModalStep('details')}
+              >
+                1. Job Details & Documents
+              </button>
+              <button
+                type="button"
+                className={`step-tab ${modalStep === 'apply' ? 'active' : ''}`}
+                onClick={() => setModalStep('apply')}
+              >
+                2. Verify & Apply
+              </button>
             </div>
 
-            <div className="modal-section">
-              <h4>Description</h4>
-              <p>{selectedJob.description}</p>
+            <div className="modal-highlight-bar">
+              <span>{selectedJob.company}</span>
+              <span>{selectedJob.ctc}</span>
+              <span>Deadline: {formatDate(selectedJob.deadline)}</span>
             </div>
 
-            <div className="modal-section">
-              <h4>Required Skills</h4>
-              <div className="skills-list">
-                {selectedJob.skills.map((skill, index) => (
-                  <span key={index} className="skill">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="modal-section">
-              <h4>Key Details</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="label">Min CGPA</span>
-                  <span className="value">{selectedJob.minCGPA}</span>
+            {modalStep === 'details' ? (
+              <>
+                <div className="modal-section">
+                  <h4>Job Summary</h4>
+                  <p>{selectedJob.description}</p>
                 </div>
-                <div className="info-item">
-                  <span className="label">CTC</span>
-                  <span className="value">{selectedJob.ctc}</span>
+
+                <div className="criteria-grid">
+                  <div className="criteria-card">
+                    <span>Required CGPA</span>
+                    <strong>{selectedJob.minCGPA}</strong>
+                  </div>
+                  <div className="criteria-card">
+                    <span>Your CGPA</span>
+                    <strong>{applyDraft.cgpa}</strong>
+                  </div>
+                  <div className="criteria-card">
+                    <span>Eligibility</span>
+                    <strong>{Number(applyDraft.cgpa) >= selectedJob.minCGPA ? 'Eligible' : 'Not Eligible'}</strong>
+                  </div>
                 </div>
-                <div className="info-item">
-                  <span className="label">Application Deadline</span>
-                  <span className="value">{formatDate(selectedJob.deadline)}</span>
+
+                <div className="modal-section">
+                  <h4>Bond Agreement</h4>
+                  <p>
+                    {selectedJob.bondAgreement.required
+                      ? `Required (${selectedJob.bondAgreement.durationMonths} months)`
+                      : 'Not required'}
+                  </p>
+                  <p>{selectedJob.bondAgreement.details}</p>
                 </div>
+
+                <div className="modal-section">
+                  <h4>Selection Process</h4>
+                  <ol className="process-list">
+                    {selectedJob.selectionProcess.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="modal-section">
+                  <h4>Required PDFs & Documents</h4>
+                  <div className="required-docs-list">
+                    {selectedJob.documents.map((doc) => (
+                      <a key={doc.label} href={doc.url} target="_blank" rel="noreferrer" className="required-doc-item">
+                        <span>{doc.label}</span>
+                        <strong>{doc.type}</strong>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="tpo-note">
+                  <strong>TPO Note:</strong> {selectedJob.tpoNote}
+                </p>
+              </>
+            ) : (
+              <div className="modal-section application-verify-section">
+                <div className="verify-head">
+                  <h4>Profile Verification Before Apply</h4>
+                  <button type="button" className="btn btn-outlined btn-small" onClick={resetToPrefilled}>
+                    Use Prefilled Data
+                  </button>
+                </div>
+
+                <div className="verify-grid">
+                  <div className="form-group">
+                    <label>Full Name</label>
+                    <input
+                      className="form-input"
+                      value={applyDraft.fullName}
+                      onChange={(e) => setApplyDraft((prev) => ({ ...prev, fullName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>College Email</label>
+                    <input
+                      className="form-input"
+                      value={applyDraft.collegeEmail}
+                      onChange={(e) => setApplyDraft((prev) => ({ ...prev, collegeEmail: e.target.value }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone</label>
+                    <input
+                      className="form-input"
+                      value={applyDraft.phone}
+                      onChange={(e) => setApplyDraft((prev) => ({ ...prev, phone: e.target.value }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>CGPA</label>
+                    <input
+                      className="form-input"
+                      value={applyDraft.cgpa}
+                      onChange={(e) => setApplyDraft((prev) => ({ ...prev, cgpa: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="doc-grid">
+                  <div className="doc-tile">
+                    <span className="doc-label">Resume</span>
+                    <strong>{applyDraft.resumeFile || 'Not uploaded'}</strong>
+                    <label className="btn btn-outlined btn-small upload-doc-btn">
+                      Replace
+                      <input type="file" hidden onChange={(e) => handleReplaceFile('resumeFile', e)} />
+                    </label>
+                  </div>
+
+                  <div className="doc-tile">
+                    <span className="doc-label">10th Marksheet</span>
+                    <strong>{applyDraft.tenthMarksheetFile || 'Not uploaded'}</strong>
+                    <label className="btn btn-outlined btn-small upload-doc-btn">
+                      Replace
+                      <input type="file" hidden onChange={(e) => handleReplaceFile('tenthMarksheetFile', e)} />
+                    </label>
+                  </div>
+
+                  <div className="doc-tile">
+                    <span className="doc-label">12th Marksheet</span>
+                    <strong>{applyDraft.twelfthMarksheetFile || 'Not uploaded'}</strong>
+                    <label className="btn btn-outlined btn-small upload-doc-btn">
+                      Replace
+                      <input type="file" hidden onChange={(e) => handleReplaceFile('twelfthMarksheetFile', e)} />
+                    </label>
+                  </div>
+
+                  <div className="doc-tile">
+                    <span className="doc-label">Graduation Marksheet</span>
+                    <strong>{applyDraft.graduationMarksheetFile || 'Not uploaded'}</strong>
+                    <label className="btn btn-outlined btn-small upload-doc-btn">
+                      Replace
+                      <input type="file" hidden onChange={(e) => handleReplaceFile('graduationMarksheetFile', e)} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Note for Recruiter (Optional)</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={applyDraft.note}
+                    onChange={(e) => setApplyDraft((prev) => ({ ...prev, note: e.target.value }))}
+                    placeholder="Add any project or achievement highlight"
+                  />
+                </div>
+
+                <label className="verify-check">
+                  <input
+                    type="checkbox"
+                    checked={applyDraft.declarationAccepted}
+                    onChange={(e) =>
+                      setApplyDraft((prev) => ({ ...prev, declarationAccepted: e.target.checked }))
+                    }
+                  />
+                  I verify all details and documents are correct for this application.
+                </label>
               </div>
-            </div>
+            )}
 
-            <div className="modal-section">
-              <h4>Bond Agreement</h4>
-              <p>
-                {selectedJob.bondAgreement.required
-                  ? `Required (${selectedJob.bondAgreement.durationMonths} months)`
-                  : 'Not required'}
-              </p>
-              <p>{selectedJob.bondAgreement.details}</p>
-            </div>
-
-            <div className="modal-section">
-              <h4>Requirements</h4>
-              <div className="skills-list">
-                {selectedJob.requirements.map((item, index) => (
-                  <span key={index} className="skill">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="modal-section">
-              <h4>Selection Process</h4>
-              <div className="skills-list">
-                {selectedJob.selectionProcess.map((step, index) => (
-                  <span key={index} className="skill">
-                    {step}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="modal-section">
-              <h4>Documents</h4>
-              <div className="skills-list">
-                {selectedJob.documents.map((doc, index) => (
-                  <a
-                    key={index}
-                    className="skill"
-                    href={doc.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {doc.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            <div className="modal-section">
-              <h4>Locations</h4>
-              <p>{selectedJob.locations.join(', ')}</p>
-            </div>
+            {applicationMessage && <p className="apply-message">{applicationMessage}</p>}
           </div>
         )}
       </Modal>

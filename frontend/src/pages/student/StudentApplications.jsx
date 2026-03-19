@@ -3,9 +3,7 @@ import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import StudentTopPanel from '../../components/student/StudentTopPanel';
 import {
-  MdBarChart,
   MdCardGiftcard,
-  MdChat,
   MdClear,
   MdInfoOutline,
   MdPhoneInTalk,
@@ -16,8 +14,6 @@ import './StudentApplications.css';
 
 const StudentApplications = () => {
   const [selectedApp, setSelectedApp] = useState(null);
-  const [messageTarget, setMessageTarget] = useState(null);
-  const [messageText, setMessageText] = useState('');
   const [applications] = useState([
     {
       id: 1,
@@ -35,6 +31,10 @@ const StudentApplications = () => {
       lastUpdated: '2024-01-22',
       source: 'Campus Placement Cell',
       eligibility: 'Eligible (CGPA 8.2 / Required 7.5)',
+      requiredSkills: ['Python', 'JavaScript', 'DSA', 'System Design'],
+      selectionProcess: ['Online Assessment', 'Technical Interview 1', 'Technical Interview 2', 'HR Interview'],
+      bondPolicy: 'Required (12 months)',
+      tpoCoordinator: 'Dr. R. Sharma',
       recruiter: {
         name: 'Anita Rao',
         email: 'anita.rao@google.com',
@@ -96,6 +96,10 @@ const StudentApplications = () => {
       lastUpdated: '2024-02-01',
       source: 'Campus Placement Cell',
       eligibility: 'Eligible (CGPA 8.2 / Required 7.0)',
+      requiredSkills: ['Product Thinking', 'Analytics', 'Communication', 'Leadership'],
+      selectionProcess: ['Case Study Round', 'Technical Discussion', 'HR Interview'],
+      bondPolicy: 'Not required',
+      tpoCoordinator: 'Prof. Neha Soni',
       recruiter: {
         name: 'Ritika Sharma',
         email: 'ritika.sharma@microsoft.com',
@@ -159,6 +163,10 @@ const StudentApplications = () => {
       lastUpdated: '2024-02-10',
       source: 'Campus Placement Cell',
       eligibility: 'Eligible (CGPA 8.2 / Required 6.5)',
+      requiredSkills: ['SQL', 'Python', 'ETL', 'Data Modeling'],
+      selectionProcess: ['Coding Round', 'Technical Interview', 'HR Interview'],
+      bondPolicy: 'Required (18 months)',
+      tpoCoordinator: 'Dr. R. Sharma',
       recruiter: {
         name: 'Kunal Mehta',
         email: 'kunal.mehta@amazon.com',
@@ -216,6 +224,10 @@ const StudentApplications = () => {
       lastUpdated: '2024-01-20',
       source: 'Campus Placement Cell',
       eligibility: 'Eligible (CGPA 8.2 / Required 6.0)',
+      requiredSkills: ['Java', 'SQL', 'OOPS', 'Aptitude'],
+      selectionProcess: ['Aptitude Test', 'Technical Interview', 'HR Interview'],
+      bondPolicy: 'Required (24 months)',
+      tpoCoordinator: 'Prof. Rahul Desai',
       recruiter: {
         name: 'Megha Iyer',
         email: 'megha.iyer@tcs.com',
@@ -294,13 +306,6 @@ const StudentApplications = () => {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!messageText.trim()) return;
-    alert(`Message sent for ${messageTarget.applicationId} (${messageTarget.company} - ${messageTarget.position}).`);
-    setMessageText('');
-    setMessageTarget(null);
-  };
-
   return (
     <div className="student-applications">
       <StudentTopPanel
@@ -320,35 +325,6 @@ const StudentApplications = () => {
           'Interview schedule changes are published through placement desk',
         ]}
       />
-
-      <div className="stats-summary stats-summary--top">
-        <Card title={<span className="summary-title"><MdBarChart aria-hidden="true" />Application Summary</span>}>
-          <div className="summary-grid">
-            <div className="summary-item">
-              <span className="summary-label">Total Applications</span>
-              <span className="summary-value">{applications.length}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-label">Shortlisted</span>
-              <span className="summary-value">
-                {applications.filter(a => a.status === 'shortlisted').length}
-              </span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-label">Interviews</span>
-              <span className="summary-value">
-                {applications.filter(a => a.status === 'interview').length}
-              </span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-label">Offers</span>
-              <span className="summary-value">
-                {applications.filter(a => a.status === 'offer').length}
-              </span>
-            </div>
-          </div>
-        </Card>
-      </div>
 
       <div className="applications-list">
         {applications.map((app) => (
@@ -429,14 +405,6 @@ const StudentApplications = () => {
                 <MdInfoOutline aria-hidden="true" />
                 View Details
               </button>
-              <button
-                className="app-action-btn app-action-btn--primary"
-                onClick={() => setMessageTarget(app)}
-                type="button"
-              >
-                <MdChat aria-hidden="true" />
-                Send Message
-              </button>
             </div>
           </Card>
         ))}
@@ -511,6 +479,36 @@ const StudentApplications = () => {
                 <div className="details-card">
                   <span className="details-label">Eligibility</span>
                   <span className="details-value">{selectedApp.eligibility}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="details-section">
+              <h4>Job Details</h4>
+              <div className="details-grid details-grid-wide">
+                <div className="details-card details-card-highlight">
+                  <span className="details-label">Required Skills</span>
+                  <div className="details-chip-row">
+                    {selectedApp.requiredSkills.map((skill) => (
+                      <span key={skill} className="details-chip">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="details-card">
+                  <span className="details-label">Selection Process</span>
+                  <ol className="details-list">
+                    {selectedApp.selectionProcess.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+                <div className="details-card">
+                  <span className="details-label">Bond Policy</span>
+                  <span className="details-value">{selectedApp.bondPolicy}</span>
+                </div>
+                <div className="details-card">
+                  <span className="details-label">TPO Coordinator</span>
+                  <span className="details-value">{selectedApp.tpoCoordinator}</span>
                 </div>
               </div>
             </div>
@@ -627,36 +625,6 @@ const StudentApplications = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        isOpen={!!messageTarget}
-        title={messageTarget ? `Message ${messageTarget.company}` : ''}
-        onClose={() => setMessageTarget(null)}
-        onConfirm={handleSendMessage}
-        confirmText="Send"
-      >
-        {messageTarget && (
-          <div className="message-modal">
-            <p className="message-helper">
-              This note will be sent to the placement team for {messageTarget.position}.
-            </p>
-            <label className="message-label" htmlFor="message-text">
-              Message
-            </label>
-            <textarea
-              id="message-text"
-              className="message-field"
-              rows={5}
-              placeholder="Ask for interview updates or document requirements..."
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-            />
-            <div className="message-hint">
-              Tip: Mention your application ID ({messageTarget.applicationId}) or interview slot preference.
             </div>
           </div>
         )}
