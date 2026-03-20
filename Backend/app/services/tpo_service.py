@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import hash_password
 from app.models.user import User
+from app.models.jobs import Job
+from app.models.job_eligibility import JobEligibility
+from app.models.placement_drives import PlacementDrive
 from app.repositories import audit_repo, user_repo
 from app.repositories import tpo_feature_repo
 from app.schemas.tpo_schema import MaterialCategory, ReportType
@@ -331,6 +334,56 @@ class TPOService:
         department_id = await TPOService._get_department_id_or_404(db, current_user_id)
         jobs = await tpo_feature_repo.list_active_jobs_for_department(db, department_id)
         return {"jobs": jobs}
+
+    @staticmethod
+    async def update_job_approval_status(
+        db: AsyncSession,
+        current_user_id: uuid.UUID,
+        job_id: uuid.UUID,
+        status: str,
+    ) -> dict:
+        department_id = await TPOService._get_department_id_or_404(db, current_user_id)
+
+        row = await db.execute(
+            select(Job, PlacementDrive)
+            .join(JobEligibility, JobEligibility.job_id == Job.id)
+            .outerjoin(PlacementDrive, PlacementDrive.id == Job.drive_id)
+            .where(Job.id == job_id)
+            .where(JobEligibility.department_id == department_id)
+        )
+        data = row.one_or_none()
+        if not data:
+            raise HTTPException(404, "Job not found in your department scope")
+
+        job, drive = data
+        normalized_status = (status or "PENDING").upper()
+
+        if drive is None:
+            drive = PlacementDrive(
+                company_id=job.company_id,
+                name=f"{job.title} Drive",
+                drive_date=job.application_deadline,
+                registration_deadline=job.application_deadline,
+                status=normalized_status,
+            )
+            db.add(drive)
+            await db.flush()
+            job.drive_id = drive.id
+        else:
+            drive.status = normalized_status
+
+        await db.commit()
+
+        await audit_repo.create_log(
+            db,
+            current_user_id,
+            "UPDATE_JOB_APPROVAL_STATUS",
+            "job",
+            str(job_id),
+            {"status": normalized_status},
+        )
+
+        return {"message": "Job approval status updated", "job_id": job.id, "status": normalized_status}
 
     @staticmethod
     async def override_application_status(

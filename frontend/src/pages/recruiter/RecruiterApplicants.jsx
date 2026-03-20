@@ -1,20 +1,18 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
+import { recruiterAPI } from '../../services/api';
 import {
   formatDate,
   formatDateTime,
-  getRecruiterApplications,
-  getRecruiterRequests,
   getStatusClass,
   getStatusLabel,
-  saveRecruiterApplications,
 } from './recruiterData';
 import './RecruiterApplicants.css';
 
 const RecruiterApplicants = () => {
-  const [applications, setApplications] = useState(() => getRecruiterApplications());
-  const [jobs] = useState(() => getRecruiterRequests());
+  const [applications, setApplications] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [selectedApplicant, setSelectedApplicant] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
@@ -32,6 +30,31 @@ const RecruiterApplicants = () => {
     const unique = [...new Set(applications.map((app) => app.student.branch))];
     return unique;
   }, [applications]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        const [jobsResponse, appsResponse] = await Promise.all([
+          recruiterAPI.getJobs(),
+          recruiterAPI.getApplicants(),
+        ]);
+        if (!isMounted) return;
+        setJobs(Array.isArray(jobsResponse?.data?.jobs) ? jobsResponse.data.jobs : []);
+        setApplications(Array.isArray(appsResponse?.data?.applications) ? appsResponse.data.applications : []);
+      } catch (error) {
+        if (!isMounted) return;
+        setJobs([]);
+        setApplications([]);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredApplicants = useMemo(() => {
     return applications.filter((app) => {
@@ -52,28 +75,31 @@ const RecruiterApplicants = () => {
     });
   }, [applications, filters]);
 
-  const handleStatusChange = (applicationId, status) => {
-    setApplications((prev) => {
-      const updated = prev.map((app) => {
-        if (app.id !== applicationId) return app;
-        return {
-          ...app,
-          status,
-          result:
-            status === 'offer'
-              ? 'Offer released'
-              : status === 'interview'
-                ? 'Interview in progress'
-                : status === 'shortlisted'
-                  ? 'Shortlisted for next round'
-                  : status === 'rejected'
-                    ? 'Not selected for further rounds'
-                    : 'Application received',
-        };
-      });
-      saveRecruiterApplications(updated);
-      return updated;
-    });
+  const handleStatusChange = async (applicationId, status) => {
+    try {
+      await recruiterAPI.updateApplicationStatus(applicationId, status);
+      setApplications((prev) =>
+        prev.map((app) => {
+          if (app.id !== applicationId) return app;
+          return {
+            ...app,
+            status,
+            result:
+              status === 'offer'
+                ? 'Offer released'
+                : status === 'interview'
+                  ? 'Interview in progress'
+                  : status === 'shortlisted'
+                    ? 'Shortlisted for next round'
+                    : status === 'rejected'
+                      ? 'Not selected for further rounds'
+                      : 'Application received',
+          };
+        })
+      );
+    } catch (error) {
+      // Ignore and preserve current UI state when update fails.
+    }
   };
 
   const handleContactStudent = (applicant) => {
@@ -84,13 +110,11 @@ const RecruiterApplicants = () => {
     );
     window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
 
-    setApplications((prev) => {
-      const updated = prev.map((app) =>
+    setApplications((prev) =>
+      prev.map((app) =>
         app.id === applicant.id ? { ...app, contactedAt: new Date().toISOString() } : app
-      );
-      saveRecruiterApplications(updated);
-      return updated;
-    });
+      )
+    );
   };
 
   return (

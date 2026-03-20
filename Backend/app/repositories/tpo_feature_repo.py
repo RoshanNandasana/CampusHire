@@ -16,6 +16,7 @@ from app.models.job_eligibility import JobEligibility
 from app.models.jobs import Job
 from app.models.material_acces import MaterialAccess
 from app.models.offers import Offer
+from app.models.placement_drives import PlacementDrive
 from app.models.placement_cycle import PlacementCycle
 from app.models.resume_ai_analysis import ResumeAIAnalysis
 from app.models.resume_versions import ResumeVersion
@@ -419,10 +420,12 @@ async def list_active_jobs_for_department(db: AsyncSession, department_id: uuid.
             Job.application_deadline,
             Job.created_at,
             Job.updated_at,
+            PlacementDrive.status,
             Company.id,
             Company.name,
         )
         .join(Company, Company.id == Job.company_id)
+        .outerjoin(PlacementDrive, PlacementDrive.id == Job.drive_id)
         .join(JobEligibility, JobEligibility.job_id == Job.id)
         .where(JobEligibility.department_id == department_id)
         .where(Job.application_deadline >= now)
@@ -438,6 +441,7 @@ async def list_active_jobs_for_department(db: AsyncSession, department_id: uuid.
         application_deadline,
         created_at,
         updated_at,
+        approval_status,
         company_id,
         company_name,
     ) in rows.all():
@@ -451,6 +455,7 @@ async def list_active_jobs_for_department(db: AsyncSession, department_id: uuid.
                 "application_deadline": application_deadline,
                 "created_at": created_at,
                 "updated_at": updated_at,
+                "approval_status": (approval_status or "PENDING").upper(),
                 "company": {"id": company_id, "name": company_name},
                 "pipeline": pipeline,
             }

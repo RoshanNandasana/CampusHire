@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Card from '../../components/common/Card';
 import { useAuth } from '../../context/AuthContext';
-import { getRecruiterRequests, getRecruiterScope, saveRecruiterRequests } from './recruiterData';
+import { recruiterAPI } from '../../services/api';
 import './RecruiterPostJob.css';
 
 const DEFAULT_DOCUMENTS = [
@@ -21,7 +21,6 @@ const emptyRound = () => ({
 
 const RecruiterPostJob = () => {
   const { user } = useAuth();
-  const scope = getRecruiterScope(user);
   const [message, setMessage] = useState('');
   const [requiredDocuments, setRequiredDocuments] = useState(DEFAULT_DOCUMENTS);
   const [rounds, setRounds] = useState([emptyRound()]);
@@ -95,7 +94,7 @@ const RecruiterPostJob = () => {
     setRounds([emptyRound()]);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validRounds = rounds.filter((round) => round.name.trim() && round.date);
@@ -109,51 +108,35 @@ const RecruiterPostJob = () => {
       return;
     }
 
-    const requests = getRecruiterRequests();
-    const nextRequest = {
-      id: Date.now(),
-      company: scope.companyName,
-      companyId: scope.companyId,
-      recruiterId: scope.recruiterId,
-      position: formData.title.trim(),
-      openings: Number(formData.openings) || 1,
-      location: formData.location.trim(),
-      ctc: `${formData.salary} LPA`,
-      minCGPA: Number(formData.minCGPA) || 0,
-      skills: formData.skills
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-      bondDurationMonths: Number(formData.bondDurationMonths) || 0,
-      bondDetails: formData.bondDetails.trim(),
-      driveDate: formData.driveDate,
-      deadline: formData.deadline,
-      contactName: formData.contactName.trim(),
-      contactRole: formData.contactRole.trim(),
-      contactEmail: formData.contactEmail.trim(),
-      contactPhone: formData.contactPhone.trim(),
-      description: formData.description.trim(),
-      selectionProcess: validRounds.map((round) => round.name),
-      roundSchedule: validRounds.map((round, index) => ({
-        id: `r${index + 1}`,
-        name: round.name,
-        date: round.date,
-        time: round.time,
-        mode: round.mode,
-        status: 'scheduled',
-        feedback: '',
-      })),
-      requiredDocuments,
-      jobDescriptionFileName: formData.jobDescriptionFileName,
-      bondAgreementFileName: formData.bondAgreementFileName,
-      approvalStatus: 'pending',
-      createdBy: 'recruiter',
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      await recruiterAPI.postJob({
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        openings: Number(formData.openings) || 1,
+        minCGPA: Number(formData.minCGPA) || 0,
+        skills: formData.skills
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+        salaryLpa: Number(formData.salary) || 0,
+        location: formData.location.trim(),
+        driveDate: formData.driveDate,
+        deadline: formData.deadline,
+        contactName: formData.contactName.trim(),
+        contactRole: formData.contactRole.trim(),
+        contactEmail: formData.contactEmail.trim(),
+        contactPhone: formData.contactPhone.trim(),
+        bondDurationMonths: Number(formData.bondDurationMonths) || 0,
+        bondDetails: formData.bondDetails.trim(),
+        requiredDocuments,
+        rounds: validRounds,
+      });
 
-    saveRecruiterRequests([nextRequest, ...requests]);
-    setMessage('Job request posted successfully and shared to TPO panel for approval.');
-    resetForm();
+      setMessage('Job request posted successfully and shared to TPO panel for approval.');
+      resetForm();
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || 'Unable to submit job request right now.');
+    }
   };
 
   return (
@@ -161,7 +144,7 @@ const RecruiterPostJob = () => {
       <div className="header">
         <h1>Post a New Job</h1>
         <p>
-          {scope.companyName} posting view: submit hiring details with rounds, bond terms, and required PDFs.
+          Recruiter posting view: submit hiring details with rounds, bond terms, and required PDFs.
         </p>
       </div>
 
@@ -174,7 +157,7 @@ const RecruiterPostJob = () => {
               <label>Company Name</label>
               <input
                 type="text"
-                value={scope.companyName}
+                value={user?.email || 'Recruiter account'}
                 className="form-input"
                 readOnly
               />

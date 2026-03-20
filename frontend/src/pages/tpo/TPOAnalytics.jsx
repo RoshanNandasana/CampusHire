@@ -1,16 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import { useAuth } from '../../context/AuthContext';
+import { tpoAPI } from '../../services/api';
 import './TPOAnalytics.css';
 
-const COMPANY_HIRING_DATA = [
-  { company: 'Google', offers: 12, hired: 9, avgCtc: 20, driveDate: '2026-03-01' },
-  { company: 'Microsoft', offers: 10, hired: 7, avgCtc: 18, driveDate: '2026-03-04' },
-  { company: 'Amazon', offers: 9, hired: 6, avgCtc: 16, driveDate: '2026-03-09' },
-  { company: 'Infosys', offers: 24, hired: 18, avgCtc: 8, driveDate: '2026-03-12' },
-  { company: 'TCS', offers: 28, hired: 22, avgCtc: 7, driveDate: '2026-03-15' },
-  { company: 'Deloitte', offers: 8, hired: 5, avgCtc: 10, driveDate: '2026-03-18' },
-];
+const COMPANY_HIRING_DATA = [];
 
 const BRANCH_STUDENT_COUNT = 120;
 
@@ -34,8 +28,45 @@ const TPOAnalytics = () => {
     sortBy: 'hired',
   });
 
+  const [analyticsData, setAnalyticsData] = useState(COMPANY_HIRING_DATA);
+  const [branchStudentCount, setBranchStudentCount] = useState(BRANCH_STUDENT_COUNT);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAnalytics = async () => {
+      try {
+        const response = await tpoAPI.getAnalytics();
+        const data = response?.data || {};
+        if (!isMounted) return;
+
+        const companyBreakdown = Array.isArray(data.company_breakdown)
+          ? data.company_breakdown
+          : [];
+        setAnalyticsData(
+          companyBreakdown.map((item) => ({
+            company: item.company_name || 'Company',
+            offers: Number(item.offers_made || 0),
+            hired: Number(item.offers_accepted || 0),
+            avgCtc: 0,
+            driveDate: new Date().toISOString().slice(0, 10),
+          }))
+        );
+
+        setBranchStudentCount(Number(data.placement_stats?.total_students || BRANCH_STUDENT_COUNT));
+      } catch (error) {
+        if (!isMounted) return;
+      }
+    };
+
+    loadAnalytics();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredRows = useMemo(() => {
-    const base = COMPANY_HIRING_DATA.filter((item) => {
+    const base = analyticsData.filter((item) => {
       const search = filters.searchCompany.toLowerCase();
       const matchSearch = !search || item.company.toLowerCase().includes(search);
       const matchOffers = item.offers >= Number(filters.minOffers);
@@ -49,7 +80,7 @@ const TPOAnalytics = () => {
       if (filters.sortBy === 'ctc') return b.avgCtc - a.avgCtc;
       return b.hired - a.hired;
     });
-  }, [filters]);
+  }, [analyticsData, filters]);
 
   const summary = useMemo(() => {
     const totalOffers = filteredRows.reduce((sum, row) => sum + row.offers, 0);
@@ -59,7 +90,7 @@ const TPOAnalytics = () => {
       : '0.0';
 
     const conversionRate = totalOffers ? ((totalHired / totalOffers) * 100).toFixed(1) : '0.0';
-    const placementRate = ((totalHired / BRANCH_STUDENT_COUNT) * 100).toFixed(1);
+    const placementRate = branchStudentCount ? ((totalHired / branchStudentCount) * 100).toFixed(1) : '0.0';
 
     return {
       totalOffers,
@@ -69,7 +100,7 @@ const TPOAnalytics = () => {
       placementRate,
       companies: filteredRows.length,
     };
-  }, [filteredRows]);
+  }, [branchStudentCount, filteredRows]);
 
   return (
     <div className="tpo-analytics-simple">

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Card from '../../components/common/Card';
+import { tpoAPI } from '../../services/api';
 import './TPOApplications.css';
 
 const TPOApplications = () => {
-  const [applications] = React.useState([
+  const [applications, setApplications] = React.useState([
     {
       id: 'APP-1001',
       student: 'Raj Kumar',
@@ -147,6 +148,41 @@ const TPOApplications = () => {
   const updateFilter = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadApplications = async () => {
+      try {
+        const response = await tpoAPI.getApplications();
+        const items = response?.data?.applications;
+        if (!isMounted || !Array.isArray(items)) return;
+
+        const mapped = items.map((item, index) => ({
+          id: item.id || `APP-${index + 1}`,
+          student: item.student || 'Student',
+          email: item.email || '-',
+          branch: item.branch || '-',
+          cgpa: Number(item.cgpa || 0),
+          company: item.company || 'Company',
+          position: item.position || 'Role',
+          status: item.status || 'applied',
+          appliedAt: item.appliedAt || item.updatedAt,
+          updatedAt: item.updatedAt || item.appliedAt,
+          nextStep: item.nextStep || 'Recruiter review',
+        }));
+
+        setApplications(mapped);
+      } catch (error) {
+        if (!isMounted) return;
+      }
+    };
+
+    loadApplications();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="tpo-applications">

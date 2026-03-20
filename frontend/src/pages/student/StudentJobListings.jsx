@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import StudentTopPanel from '../../components/student/StudentTopPanel';
+import { studentAPI } from '../../services/api';
 import './StudentJobListings.css';
 
-const STUDENT_JOBS_STORAGE_KEY = 'campusHireApprovedStudentJobs';
 
 const DEFAULT_JOBS = [
   {
@@ -115,20 +115,11 @@ const StudentJobListings = () => {
     minCtc: 0,
   });
 
-  const [jobs] = useState(() => {
-    const storedJobs = localStorage.getItem(STUDENT_JOBS_STORAGE_KEY);
-    if (storedJobs) {
-      try {
-        const parsedJobs = JSON.parse(storedJobs);
-        if (Array.isArray(parsedJobs) && parsedJobs.length > 0) {
-          return parsedJobs;
-        }
-      } catch (error) {
-        return DEFAULT_JOBS;
-      }
-    }
-    return DEFAULT_JOBS;
+  const [jobs, setJobs] = useState(() => {
+  const [jobs, setJobs] = useState([]);
   });
+
+  const [studentCgpa, setStudentCgpa] = useState(8.2);
 
   const [applyDraft, setApplyDraft] = useState({
     fullName: 'John Doe',
@@ -178,7 +169,7 @@ const StudentJobListings = () => {
   );
 
   const filteredJobs = jobs.filter((job) => {
-    const userCgpa = 8.2;
+    const userCgpa = Number(studentCgpa || 0);
     const eligibleCgpa = userCgpa >= job.minCGPA;
     const matchesSearch =
       job.company.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
@@ -192,7 +183,46 @@ const StudentJobListings = () => {
     return eligibleCgpa && matchesSearch && matchesCompany && matchesLocation && matchesSkill && matchesCtc;
   });
 
-  const isEligible = (job) => 8.2 >= job.minCGPA;
+  const isEligible = (job) => Number(studentCgpa || 0) >= Number(job.minCGPA || 0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadJobs = async () => {
+      try {
+        const response = await studentAPI.getJobListings();
+        const data = response?.data;
+        if (!isMounted || !data) return;
+
+        if (Array.isArray(data.jobs) && data.jobs.length > 0) {
+          const mapped = data.jobs.map((job) => ({
+            ...job,
+            bondAgreement: job.bondAgreement || {
+              required: false,
+              durationMonths: 0,
+              details: 'Bond details will be shared by recruiter/TPO.',
+            },
+            selectionProcess: job.selectionProcess || ['Application Review', 'Interview Rounds', 'Final Decision'],
+            documents: job.documents || [{ label: 'Role Description', url: '#', type: 'PDF' }],
+            tpoNote: job.tpoNote || 'Follow TPO instructions for drive process.',
+            tpoCoordinator: job.tpoCoordinator || 'Placement Cell',
+          }));
+          setJobs(mapped);
+        } else {
+          setJobs([]);
+        }
+        if (typeof data.studentCgpa === 'number') {
+          setStudentCgpa(data.studentCgpa);
+        }
+      } catch (error) {
+        // Keep fallback jobs if API is temporarily unavailable.
+      }
+    };
+
+    loadJobs();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleOpenApply = (job) => {
     setSelectedJob(job);
@@ -211,7 +241,7 @@ const StudentJobListings = () => {
     setApplyDraft(profileDefaults);
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!applyDraft.resumeFile || !applyDraft.graduationMarksheetFile) {
       setApplicationMessage('Resume and graduation marksheet are required to apply.');
       return;
@@ -222,11 +252,16 @@ const StudentJobListings = () => {
       return;
     }
 
-    setApplicationMessage('Application submitted successfully with verified profile documents.');
-    setTimeout(() => {
-      setSelectedJob(null);
-      setApplicationMessage('');
-    }, 800);
+    try {
+      await studentAPI.applyForJob(selectedJob.id);
+      setApplicationMessage('Application submitted successfully with verified profile documents.');
+      setTimeout(() => {
+        setSelectedJob(null);
+        setApplicationMessage('');
+      }, 800);
+    } catch (error) {
+      setApplicationMessage(error?.response?.data?.detail || 'Unable to submit application. Please try again.');
+    }
   };
 
   const handleModalConfirm = () => {
@@ -255,7 +290,7 @@ const StudentJobListings = () => {
         kicker="Student Jobs"
         stats={[
           { label: 'Eligible Jobs', value: filteredJobs.length },
-          { label: 'Profile CGPA', value: '8.2' },
+          { label: 'Profile CGPA', value: String(studentCgpa) },
           { label: 'Current Cycle', value: '2026' },
           { label: 'Filters Applied', value: Object.values(filters).some((value) => value && value !== 'all' && value !== 0) ? 'Yes' : 'No' },
         ]}

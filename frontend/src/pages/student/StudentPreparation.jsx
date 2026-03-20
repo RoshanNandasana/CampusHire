@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
+import { studentAPI } from '../../services/api';
 import './StudentPreparation.css';
 
-const TPO_MATERIALS_STORAGE_KEY = 'campusHireTpoMaterials';
 const TPO_QUIZZES_STORAGE_KEY = 'campusHireTpoQuizzes';
 
 const quizQuestionBank = {
@@ -212,64 +212,37 @@ const StudentPreparation = () => {
     },
   ]);
 
-  const [tpoMaterials] = useState(() => {
-    const fallbackMaterials = [
-      {
-        id: 1,
-        title: 'Aptitude Formula Sheet',
-        type: 'PDF',
-        uploadedBy: 'TPO Office',
-        uploadedOn: '2026-03-10',
-        link: '#',
-      },
-      {
-        id: 2,
-        title: 'Interview HR Questions Bank',
-        type: 'PDF',
-        uploadedBy: 'TPO Office',
-        uploadedOn: '2026-03-11',
-        link: '#',
-      },
-      {
-        id: 3,
-        title: 'Resume Review Checklist',
-        type: 'DOC',
-        uploadedBy: 'Placement Mentor',
-        uploadedOn: '2026-03-12',
-        link: '#',
-      },
-      {
-        id: 4,
-        title: 'Top DSA Patterns (Company Wise)',
-        type: 'PDF',
-        uploadedBy: 'Coding Cell',
-        uploadedOn: '2026-03-14',
-        link: '#',
-      },
-      {
-        id: 5,
-        title: 'Core CS Handbook (OS/DBMS/CN)',
-        type: 'PDF',
-        uploadedBy: 'TPO Office',
-        uploadedOn: '2026-03-16',
-        link: '#',
-      },
-    ];
+  const [tpoMaterials, setTpoMaterials] = useState([]);
 
-    const storedMaterials = localStorage.getItem(TPO_MATERIALS_STORAGE_KEY);
-    if (storedMaterials) {
+  useEffect(() => {
+    let isMounted = true;
+    const loadMaterials = async () => {
       try {
-        const parsedMaterials = JSON.parse(storedMaterials);
-        if (Array.isArray(parsedMaterials) && parsedMaterials.length > 0) {
-          return parsedMaterials;
+        const response = await studentAPI.getMaterials();
+        const materials = response?.data?.materials;
+        if (!isMounted || !Array.isArray(materials) || materials.length === 0) {
+          return;
         }
-      } catch (error) {
-        return fallbackMaterials;
-      }
-    }
 
-    return fallbackMaterials;
-  });
+        const mapped = materials.map((item) => ({
+          id: item.id,
+          title: item.title,
+          type: item.category || 'PDF',
+          uploadedBy: 'TPO Office',
+          uploadedOn: item.created_at,
+          link: item.file_url,
+        }));
+        setTpoMaterials(mapped);
+      } catch (error) {
+        setTpoMaterials([]);
+      }
+    };
+
+    loadMaterials();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const completedQuizCount = useMemo(
     () => scheduledQuizzes.filter((quiz) => quiz.status === 'completed').length,

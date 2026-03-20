@@ -1,38 +1,38 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
-import {
-  formatDate,
-  formatDateTime,
-  getRecruiterApplications,
-  saveRecruiterApplications,
-} from './recruiterData';
+import { recruiterAPI } from '../../services/api';
+import { formatDate, formatDateTime } from './recruiterData';
 import './RecruiterOffers.css';
 
 const RecruiterOffers = () => {
-  const [applications, setApplications] = useState(() => getRecruiterApplications());
+  const [offersData, setOffersData] = useState([]);
   const [search, setSearch] = useState('');
   const [offerStatus, setOfferStatus] = useState('all');
   const [selectedOffer, setSelectedOffer] = useState(null);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadOffers = async () => {
+      try {
+        const response = await recruiterAPI.getOffers();
+        if (!isMounted) return;
+        setOffersData(Array.isArray(response?.data?.offers) ? response.data.offers : []);
+      } catch (error) {
+        if (!isMounted) return;
+        setOffersData([]);
+      }
+    };
+
+    loadOffers();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const offers = useMemo(() => {
-    return applications
-      .filter((app) => app.status === 'offer')
-      .map((app) => {
-        const acceptance = app.offerAcceptance || 'pending';
-        return {
-          id: app.id,
-          studentName: app.student.fullName,
-          company: app.company,
-          position: app.position,
-          salary: app.offerSalary || 'As per CTC band',
-          offerDate: app.offerDate || app.appliedAt,
-          joiningDate: app.joiningDate || '',
-          acceptance,
-          studentEmail: app.student.email,
-          studentPhone: app.student.phone,
-        };
-      })
+    return offersData
       .filter((offer) => {
         const query = search.trim().toLowerCase();
         const matchesSearch =
@@ -43,21 +43,19 @@ const RecruiterOffers = () => {
         const matchesStatus = offerStatus === 'all' || offer.acceptance === offerStatus;
         return matchesSearch && matchesStatus;
       });
-  }, [applications, offerStatus, search]);
+  }, [offersData, offerStatus, search]);
 
-  const updateAcceptance = (offerId, nextStatus) => {
-    setApplications((prev) => {
-      const updated = prev.map((app) =>
-        app.id === offerId
-          ? {
-              ...app,
-              offerAcceptance: nextStatus,
-            }
-          : app
+  const updateAcceptance = async (offerId, nextStatus) => {
+    try {
+      await recruiterAPI.updateOfferStatus(offerId, nextStatus);
+      setOffersData((prev) =>
+        prev.map((offer) =>
+          offer.id === offerId ? { ...offer, acceptance: nextStatus } : offer
+        )
       );
-      saveRecruiterApplications(updated);
-      return updated;
-    });
+    } catch (error) {
+      // Preserve UI if update fails.
+    }
   };
 
   return (

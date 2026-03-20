@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   MdAdd,
   MdDeleteOutline,
@@ -14,6 +14,7 @@ import {
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import StudentTopPanel from '../../components/student/StudentTopPanel';
+import { studentAPI } from '../../services/api';
 import './StudentProfile.css';
 
 const StudentProfile = () => {
@@ -181,10 +182,48 @@ const StudentProfile = () => {
       setMessage('Phone and personal email are required.');
       return;
     }
-    setMessage('Profile details saved successfully.');
-    setIsEditMode(false);
+
+    studentAPI.updateProfile({
+      profileData,
+      skills,
+      projects,
+      certifications,
+      educationRecords,
+      additionalDocs,
+    })
+      .then(() => {
+        setMessage('Profile details saved successfully.');
+        setIsEditMode(false);
+      })
+      .catch((error) => {
+        setMessage(error?.response?.data?.detail || 'Failed to save profile details.');
+      });
   };
 
+  useEffect(() => {
+    let isMounted = true;
+    const loadProfile = async () => {
+      try {
+        const response = await studentAPI.getProfile();
+        const data = response?.data;
+        if (!isMounted || !data) return;
+
+        if (data.profileData) setProfileData((prev) => ({ ...prev, ...data.profileData }));
+        if (Array.isArray(data.educationRecords) && data.educationRecords.length > 0) setEducationRecords(data.educationRecords);
+        if (Array.isArray(data.skills)) setSkills(data.skills);
+        if (Array.isArray(data.projects)) setProjects(data.projects);
+        if (Array.isArray(data.certifications)) setCertifications(data.certifications);
+        if (Array.isArray(data.additionalDocs) && data.additionalDocs.length > 0) setAdditionalDocs(data.additionalDocs);
+      } catch (error) {
+        // Keep local defaults if API load fails.
+      }
+    };
+
+    loadProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const addSkill = () => {
     const cleaned = newSkill.trim();
     if (!cleaned) {

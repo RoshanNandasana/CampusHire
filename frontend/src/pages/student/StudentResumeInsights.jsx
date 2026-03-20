@@ -71,7 +71,7 @@ const StudentResumeInsights = () => {
     const loadInsights = async () => {
       try {
         const response = await studentAPI.getResumeInsights();
-        if (isMounted && response?.data?.status === 'success') {
+        if (isMounted && response?.data) {
           const data = response.data;
           setInsights((prev) => ({
             ...prev,
@@ -103,7 +103,7 @@ const StudentResumeInsights = () => {
       const formData = new FormData();
       formData.append('resume', file);
       const response = await studentAPI.uploadResume(formData);
-      if (response?.data?.status === 'success') {
+      if (response?.data) {
         const data = response.data;
         setInsights((prev) => ({
           ...prev,

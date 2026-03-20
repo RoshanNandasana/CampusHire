@@ -1,15 +1,41 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
-import { formatDate, getRecruiterApplications, getRecruiterRequests } from './recruiterData';
+import { recruiterAPI } from '../../services/api';
+import { formatDate } from './recruiterData';
 import './RecruiterJobs.css';
 
 const RecruiterJobs = () => {
-  const [jobs] = useState(() => getRecruiterRequests());
-  const [applications] = useState(() => getRecruiterApplications());
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        const [jobsResponse, appsResponse] = await Promise.all([
+          recruiterAPI.getJobs(),
+          recruiterAPI.getApplicants(),
+        ]);
+        if (!isMounted) return;
+        setJobs(Array.isArray(jobsResponse?.data?.jobs) ? jobsResponse.data.jobs : []);
+        setApplications(Array.isArray(appsResponse?.data?.applications) ? appsResponse.data.applications : []);
+      } catch (error) {
+        if (!isMounted) return;
+        setJobs([]);
+        setApplications([]);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const metricsByJobId = useMemo(() => {
     return applications.reduce((acc, app) => {

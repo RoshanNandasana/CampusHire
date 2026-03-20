@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const resolveApiBaseUrl = () => {
+  return process.env.REACT_APP_API_BASE_URL || '/api/v1';
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,34 +17,83 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const user = localStorage.getItem('user');
   if (user) {
-    const userData = JSON.parse(user);
-    if (userData.token) {
-      config.headers.Authorization = `Bearer ${userData.token}`;
+    try {
+      const userData = JSON.parse(user);
+      if (userData.token || userData.access_token) {
+        config.headers.Authorization = `Bearer ${userData.token || userData.access_token}`;
+      }
+    } catch (e) {
+      console.error('Error parsing user data from localStorage:', e);
     }
   }
   return config;
 });
 
+// Error handling interceptor
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear user data and redirect to login
+      localStorage.removeItem('user');
+      localStorage.removeItem('campushire.student.profile.v1');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth APIs
 export const authAPI = {
-  login: (email, password, role) => api.post('/auth/login', { email, password, role }),
+  login: (email, password) => api.post('/auth/login', { email, password }),
   register: (userData) => api.post('/auth/register', userData),
   getProfile: () => api.get('/auth/profile'),
+  changePassword: (oldPassword, newPassword) => 
+    api.post('/auth/change-password', { old_password: oldPassword, new_password: newPassword }),
+  logout: () => api.post('/auth/logout'),
 };
 
-// Student APIs
+// Student APIs - Profile & Dashboard
 export const studentAPI = {
   getDashboard: () => api.get('/student/dashboard'),
   getProfile: () => api.get('/student/profile'),
   updateProfile: (data) => api.put('/student/profile', data),
+  
+  // Applications & Jobs
   getApplications: () => api.get('/student/applications'),
   getJobListings: (filters) => api.get('/student/jobs', { params: filters }),
   applyForJob: (jobId) => api.post(`/student/apply/${jobId}`),
   getApplicationStatus: (id) => api.get(`/student/applications/${id}`),
+  
+  // Resume Management
   getResumeInsights: () => api.get('/student/resume-insights'),
   uploadResume: (formData) => api.post('/student/resume-upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+  
+  // Study Materials
+  getMaterials: () => api.get('/student/materials'),
+  
+  // Projects CRUD
+  createProject: (projectData) => api.post('/student/projects', projectData),
+  listProjects: () => api.get('/student/projects'),
+  getProject: (projectId) => api.get(`/student/projects/${projectId}`),
+  updateProject: (projectId, projectData) => api.put(`/student/projects/${projectId}`, projectData),
+  deleteProject: (projectId) => api.delete(`/student/projects/${projectId}`),
+  
+  // Certifications CRUD
+  createCertification: (certData) => api.post('/student/certifications', certData),
+  listCertifications: () => api.get('/student/certifications'),
+  getCertification: (certId) => api.get(`/student/certifications/${certId}`),
+  updateCertification: (certId, certData) => api.put(`/student/certifications/${certId}`, certData),
+  deleteCertification: (certId) => api.delete(`/student/certifications/${certId}`),
+  
+  // Skills CRUD
+  createSkill: (skillData) => api.post('/student/skills', skillData),
+  listSkills: () => api.get('/student/skills'),
+  getSkill: (skillId) => api.get(`/student/skills/${skillId}`),
+  updateSkill: (skillId, skillData) => api.put(`/student/skills/${skillId}`, skillData),
+  deleteSkill: (skillId) => api.delete(`/student/skills/${skillId}`),
 };
 
 // TPO APIs
@@ -48,24 +101,56 @@ export const tpoAPI = {
   getDashboard: () => api.get('/tpo/dashboard'),
   getStudents: (filters) => api.get('/tpo/students', { params: filters }),
   getStudentDetail: (id) => api.get(`/tpo/students/${id}`),
+  createStudent: (studentData) => api.post('/tpo/students', studentData),
+  updateStudent: (id, studentData) => api.put(`/tpo/students/${id}`, studentData),
+  bulkUploadStudents: (formData) => api.post('/tpo/students/bulk-upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  
   getJobs: () => api.get('/tpo/jobs'),
+  updateJobApproval: (jobId, status) => api.put(`/tpo/jobs/${jobId}/approval`, { status }),
   getApplications: () => api.get('/tpo/applications'),
+
+  // Study Materials
+  listMaterials: () => api.get('/tpo/materials'),
+  uploadMaterial: (formData) =>
+    api.post('/tpo/materials', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deleteMaterial: (materialId) => api.delete(`/tpo/materials/${materialId}`),
+  
+  // Eligibility Management
+  getEligibilitySnapshot: (studentId) => api.get(`/tpo/students/${studentId}/eligibility-snapshot`),
   setEligibilityRules: (rules) => api.post('/tpo/eligibility-rules', rules),
+  
+  // Analytics & Reports
   getAnalytics: () => api.get('/tpo/analytics'),
+  getStudentTimeline: (studentId) => api.get(`/tpo/students/${studentId}/application-timeline`),
+  getReports: (reportType) => api.get(`/tpo/reports/${reportType}`),
 };
 
 // Recruiter APIs
 export const recruiterAPI = {
   getDashboard: () => api.get('/recruiter/dashboard'),
+  
+  // Job Management
   postJob: (jobData) => api.post('/recruiter/jobs', jobData),
   getJobs: () => api.get('/recruiter/jobs'),
+  getJobDetail: (jobId) => api.get(`/recruiter/jobs/${jobId}`),
+  updateJob: (jobId, jobData) => api.put(`/recruiter/jobs/${jobId}`, jobData),
+  
+  // Applicant Management
   getApplicants: (filters) => api.get('/recruiter/applicants', { params: filters }),
   getApplicantProfile: (id) => api.get(`/recruiter/applicants/${id}`),
   updateApplicationStatus: (appId, status) =>
     api.put(`/recruiter/applications/${appId}`, { status }),
+  
+  // Offer Management
   releaseOffer: (appId, offerData) =>
     api.post(`/recruiter/offers/${appId}`, offerData),
   getOffers: () => api.get('/recruiter/offers'),
+  updateOfferStatus: (appId, status) =>
+    api.put(`/recruiter/offers/${appId}`, { status }),
 };
 
 export default api;

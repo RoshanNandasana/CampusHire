@@ -11,6 +11,11 @@ class TokenResponse(BaseModel):
 
     access_token: str
     refresh_token: str
+    user_id: str
+    email: str
+    role: str
+    student_id: str | None = None
+    department_id: str | None = None
 
 
 class RefreshRequest(BaseModel):

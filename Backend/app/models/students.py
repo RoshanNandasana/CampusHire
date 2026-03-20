@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Float, Integer
+from sqlalchemy import Float, Integer, Text
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,6 +29,23 @@ class Student(UUIDMixin, TimestampMixin, Base):
     twelfth_percentage: Mapped[float] = mapped_column(Float)
 
     backlog_count: Mapped[int] = mapped_column(Integer)
+
+    # Additional profile fields
+    phone: Mapped[str] = mapped_column(String(20), nullable=True)
+
+    date_of_birth: Mapped[str] = mapped_column(String(20), nullable=True)
+
+    university_id: Mapped[str] = mapped_column(String(100), nullable=True)
+
+    preferred_role: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    profile_image: Mapped[str] = mapped_column(Text, nullable=True)  # Base64 encoded image
+
+    linkedin_url: Mapped[str] = mapped_column(String(500), nullable=True)
+
+    github_url: Mapped[str] = mapped_column(String(500), nullable=True)
+
+    portfolio_url: Mapped[str] = mapped_column(String(500), nullable=True)
 
     user = relationship("User", back_populates="student")
 

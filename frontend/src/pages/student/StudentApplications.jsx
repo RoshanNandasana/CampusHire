@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import StudentTopPanel from '../../components/student/StudentTopPanel';
+import { studentAPI } from '../../services/api';
 import {
   MdCardGiftcard,
   MdClear,
@@ -14,7 +15,7 @@ import './StudentApplications.css';
 
 const StudentApplications = () => {
   const [selectedApp, setSelectedApp] = useState(null);
-  const [applications] = useState([
+  const [applications, setApplications] = useState([
     {
       id: 1,
       applicationId: 'APP-2024-0015',
@@ -305,6 +306,107 @@ const StudentApplications = () => {
         return MdRadioButtonUnchecked;
     }
   };
+
+  const normalizeStatus = (status) => {
+    const key = (status || '').toUpperCase();
+    if (key === 'APPLIED') return 'applied';
+    if (key === 'SHORTLISTED') return 'shortlisted';
+    if (key === 'REJECTED') return 'rejected';
+    if (key === 'OFFERED' || key === 'PLACED') return 'offer';
+    return 'interview';
+  };
+
+  const mapBackendApplication = (app, index) => {
+    const status = normalizeStatus(app?.status);
+    const stageHistory = Array.isArray(app?.stage_history) ? app.stage_history : [];
+    const offers = Array.isArray(app?.offers) ? app.offers : [];
+    const feedback = Array.isArray(app?.interview_feedback) ? app.interview_feedback : [];
+
+    const timeline = [
+      { status: 'Applied', date: app?.created_at, completed: true, note: 'Application submitted successfully.' },
+      ...stageHistory.map((stage) => ({
+        status: stage?.round_name || stage?.status || 'Interview Stage',
+        date: app?.updated_at,
+        completed: String(stage?.status || '').toUpperCase() !== 'PENDING',
+        note: stage?.remarks || '',
+      })),
+      {
+        status: 'Offer',
+        date: offers?.[0]?.created_at || null,
+        completed: offers.length > 0,
+        note: offers.length > 0 ? 'Offer has been released.' : 'Pending final decision.',
+      },
+    ];
+
+    const history = [
+      { label: 'Application submitted', dateTime: app?.created_at },
+      { label: 'Last status update', dateTime: app?.updated_at },
+      ...feedback.slice(0, 3).map((item) => ({
+        label: `${item?.round_name || 'Interview'} feedback: ${item?.decision || 'Updated'}`,
+        dateTime: item?.created_at,
+      })),
+    ].filter((entry) => entry?.dateTime);
+
+    return {
+      id: index + 1,
+      applicationId: String(app?.application_id || ''),
+      jobId: String(app?.job?.id || ''),
+      company: app?.job?.company?.name || 'Company',
+      position: app?.job?.title || 'Role',
+      appliedDate: app?.created_at,
+      status,
+      workMode: 'As per company policy',
+      employmentType: 'Full Time',
+      location: 'TBD',
+      ctc: offers?.[0]?.salary ? `${(Number(offers[0].salary) / 100000).toFixed(1)} LPA` : 'TBD',
+      deadline: app?.created_at,
+      lastUpdated: app?.updated_at,
+      source: 'Campus Placement Cell',
+      eligibility: 'Eligibility verified by TPO and system rules',
+      requiredSkills: [],
+      selectionProcess: stageHistory.map((stage) => stage?.round_name).filter(Boolean),
+      bondPolicy: 'As per company offer terms',
+      tpoCoordinator: 'Placement Cell',
+      recruiter: {
+        name: 'To be announced',
+        email: '-',
+        phone: '-',
+      },
+      documents: [],
+      interviews: stageHistory.map((stage) => ({
+        round: stage?.round_name || 'Interview Round',
+        date: app?.updated_at,
+        time: '-',
+        mode: 'TBD',
+        status: String(stage?.status || '').toUpperCase() === 'PENDING' ? 'Scheduled' : 'Completed',
+        panel: 'Recruiter Panel',
+      })),
+      timeline,
+      history,
+    };
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadApplications = async () => {
+      try {
+        const response = await studentAPI.getApplications();
+        const items = response?.data?.applications;
+        if (!isMounted || !Array.isArray(items)) return;
+        const mapped = items.map((app, index) => mapBackendApplication(app, index));
+        if (mapped.length > 0) {
+          setApplications(mapped);
+        }
+      } catch (error) {
+        // Keep fallback UI data when API is unavailable.
+      }
+    };
+
+    loadApplications();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="student-applications">

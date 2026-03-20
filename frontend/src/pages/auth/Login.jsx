@@ -5,6 +5,7 @@ import {
   MdVisibilityOff,
 } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../../services/api';
 import './Login.css';
 
 const Login = () => {
@@ -22,59 +23,38 @@ const Login = () => {
     { role: 'Recruiter', email: 'recruiter@example.com', password: 'recruiter123' },
   ];
 
-  const resolveRoleFromId = (loginId) => {
-    const id = loginId.toLowerCase();
-    if (id.includes('tpo')) return 'tpo';
-    if (id.includes('recruiter') || id.includes('hr')) return 'recruiter';
-    return 'student';
-  };
-
-  const resolveRecruiterCompany = (loginId) => {
-    const id = loginId.toLowerCase();
-    if (id.includes('technova') || id.includes('recruiter')) {
-      return { companyId: 'TECHNOVA', companyName: 'TechNova Systems' };
-    }
-    if (id.includes('dataspring') || id.includes('ds')) {
-      return { companyId: 'DATASPRING', companyName: 'DataSpring Labs' };
-    }
-    return { companyId: 'DEFAULT', companyName: 'Recruiter Company' };
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const role = resolveRoleFromId(email);
-
-      // Demo authentication
-      const user = {
-        id: Math.random().toString(36),
-        email,
-        name: email.split('@')[0],
-        role,
-        token: 'demo-token-' + Math.random().toString(36).substr(2, 9),
-      };
-
-      if (role === 'recruiter') {
-        const companyMeta = resolveRecruiterCompany(email);
-        user.recruiterId = email.toLowerCase();
-        user.companyId = companyMeta.companyId;
-        user.companyName = companyMeta.companyName;
+      const response = await authAPI.login(email, password);
+      const authData = response?.data;
+      if (!authData?.access_token || !authData?.role) {
+        throw new Error('Invalid login response');
       }
+
+      const user = {
+        id: authData.user_id,
+        email: authData.email,
+        name: authData.email?.split('@')?.[0] || 'user',
+        role: authData.role,
+        token: authData.access_token,
+        refreshToken: authData.refresh_token,
+        studentId: authData.student_id,
+        departmentId: authData.department_id,
+      };
 
       login(user);
 
       // Navigate based on role
-      if (role === 'student') navigate('/student/dashboard');
-      else if (role === 'tpo') navigate('/tpo/dashboard');
-      else if (role === 'recruiter') navigate('/recruiter/dashboard');
+      if (user.role === 'student') navigate('/student/dashboard');
+      else if (user.role === 'tpo') navigate('/tpo/dashboard');
+      else if (user.role === 'recruiter') navigate('/recruiter/dashboard');
+      else navigate('/login');
     } catch (err) {
-      setError('Invalid email or password');
+      setError(err?.response?.data?.detail || 'Invalid email or password');
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
+import { studentAPI } from '../../services/api';
 import './StudentDashboard.css';
 
 const StudentDashboard = () => {
-  const [stats] = useState({
+  const [stats, setStats] = useState({
     applied: 18,
     pending: 6,
     rejected: 4,
@@ -11,7 +12,7 @@ const StudentDashboard = () => {
     upcomingTasks: 5,
   });
 
-  const [recentApplications] = useState([
+  const [recentApplications, setRecentApplications] = useState([
     {
       id: 1,
       company: 'Google',
@@ -42,7 +43,7 @@ const StudentDashboard = () => {
     },
   ]);
 
-  const [upcomingPlacementTasks] = useState([
+  const [upcomingPlacementTasks, setUpcomingPlacementTasks] = useState([
     {
       id: 1,
       company: 'Infosys',
@@ -112,6 +113,32 @@ const StudentDashboard = () => {
     }
     return { label: 'Task Completed', className: 'notify completed' };
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadDashboard = async () => {
+      try {
+        const response = await studentAPI.getDashboard();
+        const data = response?.data;
+        if (!isMounted || !data) return;
+
+        setStats((prev) => ({ ...prev, ...(data.stats || {}) }));
+        if (Array.isArray(data.recentApplications) && data.recentApplications.length > 0) {
+          setRecentApplications(data.recentApplications);
+        }
+        if (Array.isArray(data.upcomingPlacementTasks)) {
+          setUpcomingPlacementTasks(data.upcomingPlacementTasks);
+        }
+      } catch (error) {
+        // Keep existing UI data as fallback.
+      }
+    };
+
+    loadDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="student-dashboard">

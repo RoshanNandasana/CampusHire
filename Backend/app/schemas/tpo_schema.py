@@ -27,6 +27,12 @@ class ReportType(str, Enum):
     STUDENT = "student"
 
 
+class JobApprovalStatus(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
 class StudentCreateByTPORequest(BaseModel):
     email: EmailStr
     password: str | None = Field(default=None, min_length=8)
@@ -67,6 +73,10 @@ class MaterialUpdateRequest(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     category: MaterialCategory | None = None
     is_global: bool | None = None
+
+
+class JobApprovalUpdateRequest(BaseModel):
+    status: JobApprovalStatus
 
 
 class StudentListItem(BaseModel):

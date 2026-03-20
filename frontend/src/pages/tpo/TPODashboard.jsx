@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
+import { tpoAPI } from '../../services/api';
 import './TPODashboard.css';
 
 const TPODashboard = () => {
@@ -13,7 +14,7 @@ const TPODashboard = () => {
     return 'CSE-A (Final Year)';
   }, [user]);
 
-  const [classData] = useState({
+  const [classData, setClassData] = useState({
     totalStudents: 72,
     studentsApplied: 58,
     companiesVisited: 14,
@@ -21,7 +22,7 @@ const TPODashboard = () => {
     offersReleased: 21,
   });
 
-  const [recentApplications] = useState([
+  const [recentApplications, setRecentApplications] = useState([
     {
       student: 'Rahul Mehta',
       rollNo: 'CSEA-041',
@@ -56,7 +57,7 @@ const TPODashboard = () => {
     },
   ]);
 
-  const [companyDrives] = useState([
+  const [companyDrives, setCompanyDrives] = useState([
     {
       company: 'Google',
       role: 'Software Engineer',
@@ -80,7 +81,7 @@ const TPODashboard = () => {
     },
   ]);
 
-  const [pendingTasks] = useState([
+  const [pendingTasks, setPendingTasks] = useState([
     'Verify 9 student profiles before next drive',
     'Share interview slot list for Google drive',
     'Approve 3 pending document corrections',
@@ -93,6 +94,71 @@ const TPODashboard = () => {
     if (status === 'Interview') return 'status-pill interview';
     return 'status-pill applied';
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      try {
+        const [dashboardResponse, jobsResponse, applicationsResponse] = await Promise.all([
+          tpoAPI.getDashboard(),
+          tpoAPI.getJobs(),
+          tpoAPI.getApplications(),
+        ]);
+        if (!isMounted) return;
+
+        const stats = dashboardResponse?.data?.stats || {};
+        const apps = Array.isArray(applicationsResponse?.data?.applications)
+          ? applicationsResponse.data.applications
+          : [];
+        const jobs = Array.isArray(jobsResponse?.data?.jobs) ? jobsResponse.data.jobs : [];
+
+        setClassData((prev) => ({
+          ...prev,
+          totalStudents: stats.totalStudents || 0,
+          studentsApplied: apps.length,
+          companiesVisited: new Set(apps.map((item) => item.company)).size,
+          activeDrives: jobs.length,
+          offersReleased: apps.filter((item) => item.status === 'offer').length,
+        }));
+
+        setRecentApplications(
+          apps.slice(0, 6).map((item) => ({
+            student: item.student,
+            rollNo: item.email,
+            company: item.company,
+            role: item.position,
+            status: item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Applied',
+            date: item.appliedAt,
+          }))
+        );
+
+        setCompanyDrives(
+          jobs.slice(0, 6).map((item) => ({
+            company: item.company?.name || 'Company',
+            role: item.title,
+            date: item.application_deadline,
+            minCgpa: '-',
+            registered: item.pipeline?.applied || 0,
+          }))
+        );
+
+        setPendingTasks([
+          `Review ${apps.filter((item) => item.status === 'applied').length} newly applied applications`,
+          `Track ${jobs.length} active drives for this department`,
+          'Update shortlist statuses after recruiter feedback',
+          'Share upcoming round schedule with students',
+        ]);
+      } catch (error) {
+        if (!isMounted) return;
+      }
+    };
+
+    loadDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="tpo-dashboard-simple">

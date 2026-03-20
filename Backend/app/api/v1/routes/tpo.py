@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
@@ -9,6 +10,7 @@ from app.core.permissions import require_roles
 from app.schemas.tpo_schema import (
     ApplicationStatusOverrideRequest,
     EligibilitySnapshotResponse,
+    JobApprovalUpdateRequest,
     MaterialCategory,
     MaterialUpdateRequest,
     ReportType,
@@ -18,9 +20,35 @@ from app.schemas.tpo_schema import (
     StudentProfileUpdateByTPORequest,
 )
 from app.services.tpo_service import TPOService
+from app.repositories import tpo_feature_repo
+from app.models.job_application import JobApplication
+from app.models.jobs import Job
+from app.models.company import Company
+from app.models.students import Student
+from app.models.user import User
+from app.models.departments import Department
 
 router = APIRouter(prefix="/tpo", tags=["TPO"])
 _tpo_only = Depends(require_roles("TPO"))
+
+
+@router.get("/dashboard")
+async def tpo_dashboard(
+    db: AsyncSession = Depends(get_db),
+    current_user=_tpo_only,
+):
+    dashboard = await TPOService.get_reports_dashboard(db, current_user.id)
+    placement = dashboard.get("placement_stats", {})
+    return {
+        "stats": {
+            "totalStudents": placement.get("total_students", 0),
+            "placedStudents": placement.get("placed_count", 0),
+            "placementRate": placement.get("placement_percentage", 0),
+            "avgCtcLpa": round((placement.get("avg_ctc", 0) or 0) / 100000, 2) if placement.get("avg_ctc") else 0,
+        },
+        "companyBreakdown": dashboard.get("company_breakdown", []),
+        "studentReport": dashboard.get("student_report", []),
+    }
 
 
 @router.get("/students")
@@ -93,6 +121,84 @@ async def list_active_jobs(
     current_user=_tpo_only,
 ):
     return await TPOService.list_active_jobs(db, current_user.id)
+
+
+@router.get("/jobs")
+async def list_jobs_compat(
+    db: AsyncSession = Depends(get_db),
+    current_user=_tpo_only,
+):
+    return await TPOService.list_active_jobs(db, current_user.id)
+
+
+@router.put("/jobs/{job_id}/approval")
+async def update_job_approval_status(
+    job_id: uuid.UUID,
+    data: JobApprovalUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=_tpo_only,
+):
+    return await TPOService.update_job_approval_status(db, current_user.id, job_id, data.status.value)
+
+
+@router.get("/applications")
+async def list_tpo_applications(
+    db: AsyncSession = Depends(get_db),
+    current_user=_tpo_only,
+):
+    department_id = await tpo_feature_repo.get_tpo_department_id(db, current_user.id)
+    if not department_id:
+                return {"applications": []}
+
+    rows = await db.execute(
+        select(JobApplication, Student, User, Job, Company, Department)
+        .join(Student, Student.id == JobApplication.student_id)
+        .join(User, User.id == Student.user_id)
+        .join(Job, Job.id == JobApplication.job_id)
+        .join(Company, Company.id == Job.company_id)
+        .join(Department, Department.id == Student.department_id)
+        .where(Student.department_id == department_id)
+        .order_by(JobApplication.created_at.desc())
+    )
+
+    applications = []
+    for application, student, user, job, company, department in rows.all():
+        applications.append(
+            {
+                "id": str(application.id),
+                "student": user.email.split("@")[0].replace(".", " ").title(),
+                "email": user.email,
+                "branch": department.name,
+                "cgpa": student.cgpa,
+                "company": company.name,
+                "position": job.title,
+                "status": str(application.status or "").lower(),
+                "appliedAt": application.created_at.isoformat() if application.created_at else "",
+                "updatedAt": application.updated_at.isoformat() if application.updated_at else "",
+                "nextStep": "Recruiter review",
+            }
+        )
+
+    return {"applications": applications}
+
+
+@router.get("/analytics")
+async def tpo_analytics(
+    db: AsyncSession = Depends(get_db),
+    current_user=_tpo_only,
+):
+    return await TPOService.get_reports_dashboard(db, current_user.id)
+
+
+@router.post("/eligibility-rules")
+async def set_eligibility_rules_compat(
+    rules: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user=_tpo_only,
+):
+    _ = db
+    _ = current_user
+    return {"message": "Eligibility rules endpoint active", "rules": rules}
 
 
 @router.post("/applications/{application_id}/override-status")

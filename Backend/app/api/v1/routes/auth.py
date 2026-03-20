@@ -18,10 +18,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not tokens:
         raise HTTPException(401, "Invalid credentials")
 
-    return {
-        "access_token": tokens[0],
-        "refresh_token": tokens[1],
-    }
+    return tokens
 
 
 @router.post("/change-password")

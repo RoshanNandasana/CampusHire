@@ -1,49 +1,51 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
-import { useAuth } from '../../context/AuthContext';
-import {
-  formatDate,
-  getRecruiterApplications,
-  getRecruiterRequests,
-  getRecruiterScope,
-  getScopedApplicationsForRecruiter,
-  getScopedRequestsForRecruiter,
-  getStatusClass,
-  getStatusLabel,
-} from './recruiterData';
+import { recruiterAPI } from '../../services/api';
+import { formatDate, getStatusClass, getStatusLabel } from './recruiterData';
 import './RecruiterDashboard.css';
 
 const RecruiterDashboard = () => {
-  const { user } = useAuth();
-  const scope = useMemo(() => getRecruiterScope(user), [user]);
+  const [stats, setStats] = useState({
+    activeJobs: 0,
+    totalApplicants: 0,
+    shortlisted: 0,
+    interviews: 0,
+    offersMade: 0,
+  });
+  const [applications, setApplications] = useState([]);
+  const [upcomingRounds, setUpcomingRounds] = useState([]);
 
-  const [allJobs] = useState(() => getRecruiterRequests());
-  const [allApplications] = useState(() => getRecruiterApplications());
+  useEffect(() => {
+    let isMounted = true;
 
-  const jobs = useMemo(
-    () => getScopedRequestsForRecruiter(allJobs, scope),
-    [allJobs, scope]
-  );
-  const applications = useMemo(
-    () => getScopedApplicationsForRecruiter(allApplications, jobs, scope),
-    [allApplications, jobs, scope]
-  );
+    const loadDashboard = async () => {
+      try {
+        const response = await recruiterAPI.getDashboard();
+        const data = response?.data || {};
+        if (!isMounted) return;
 
-  const stats = useMemo(() => {
-    const activeJobs = jobs.filter((job) => job.approvalStatus !== 'rejected').length;
-    const totalApplicants = applications.length;
-    const shortlisted = applications.filter((app) => app.status === 'shortlisted').length;
-    const interviews = applications.filter((app) => app.status === 'interview').length;
-    const offersMade = applications.filter((app) => app.status === 'offer').length;
-
-    return {
-      activeJobs,
-      totalApplicants,
-      shortlisted,
-      interviews,
-      offersMade,
+        setStats({
+          activeJobs: data?.stats?.activeJobs || 0,
+          totalApplicants: data?.stats?.totalApplicants || 0,
+          shortlisted: data?.stats?.shortlisted || 0,
+          interviews: data?.stats?.interviews || 0,
+          offersMade: data?.stats?.offersMade || 0,
+        });
+        setApplications(Array.isArray(data.recentApplications) ? data.recentApplications : []);
+        setUpcomingRounds(Array.isArray(data.upcomingRounds) ? data.upcomingRounds : []);
+      } catch (error) {
+        if (!isMounted) return;
+        setStats({ activeJobs: 0, totalApplicants: 0, shortlisted: 0, interviews: 0, offersMade: 0 });
+        setApplications([]);
+        setUpcomingRounds([]);
+      }
     };
-  }, [applications, jobs]);
+
+    loadDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const visibleApplications = useMemo(() => {
     const filtered = applications
@@ -53,33 +55,24 @@ const RecruiterDashboard = () => {
     return filtered.slice(0, 6);
   }, [applications]);
 
-  const upcomingRounds = useMemo(() => {
-    const rows = applications
-      .flatMap((app) =>
-        (app.rounds || []).map((round) => ({
-          appId: app.id,
-          studentName: app.student.fullName,
-          company: app.company,
-          position: app.position,
-          roundName: round.name,
-          roundDate: round.date,
-          roundTime: round.time,
-          roundStatus: round.status,
-        }))
-      )
-      .filter((round) => round.roundStatus !== 'completed')
-      .sort((a, b) => new Date(a.roundDate).getTime() - new Date(b.roundDate).getTime());
-
-    return rows.slice(0, 5);
-  }, [applications]);
+  const normalizedRounds = useMemo(
+    () =>
+      upcomingRounds.map((round, index) => ({
+        appId: round.appId || index,
+        studentName: round.studentName || 'Student',
+        company: round.company || '-',
+        roundName: round.roundName || 'Round',
+        roundDate: round.roundDate || '',
+        roundTime: round.roundTime || '',
+      })),
+    [upcomingRounds]
+  );
 
   return (
     <div className="recruiter-dashboard">
       <div className="header">
         <h1>Recruiter Dashboard</h1>
-        <p>
-          {scope.companyName} hiring view: jobs, applications, rounds, and student profile details.
-        </p>
+        <p>Company hiring view: jobs, applications, rounds, and student profile details.</p>
       </div>
 
       <div className="stats-grid">
@@ -124,7 +117,7 @@ const RecruiterDashboard = () => {
           <tbody>
             {visibleApplications.map((app) => (
               <tr key={app.id}>
-                <td>{app.student.fullName}</td>
+                <td>{app.student?.fullName || app.studentName || '-'}</td>
                 <td>{app.company}</td>
                 <td>{app.position}</td>
                 <td>
@@ -150,7 +143,7 @@ const RecruiterDashboard = () => {
       <div className="dashboard-grid mt-3">
         <Card title="Upcoming Rounds" className="panel-card">
           <div className="round-list">
-            {upcomingRounds.map((round) => (
+            {normalizedRounds.map((round) => (
               <div key={`${round.appId}-${round.roundName}`} className="round-item">
                 <div>
                   <p className="round-title">{round.roundName}</p>
@@ -164,7 +157,7 @@ const RecruiterDashboard = () => {
                 </div>
               </div>
             ))}
-            {!upcomingRounds.length && (
+            {!normalizedRounds.length && (
               <p className="empty-text">No pending rounds.</p>
             )}
           </div>
