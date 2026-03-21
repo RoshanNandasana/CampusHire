@@ -35,7 +35,7 @@ class JobApprovalStatus(str, Enum):
 
 class StudentCreateByTPORequest(BaseModel):
     email: EmailStr
-    password: str | None = Field(default=None, min_length=8)
+    password: str = Field(min_length=8)
     enrollment_number: str = Field(min_length=1, max_length=50)
     cgpa: float = Field(ge=0, le=10)
     tenth_percentage: float = Field(ge=0, le=100)
@@ -45,7 +45,7 @@ class StudentCreateByTPORequest(BaseModel):
 
 class StudentBulkCreateRow(BaseModel):
     email: EmailStr
-    password: str | None = None
+    password: str = Field(min_length=8)
     enrollment_number: str
     cgpa: float
     tenth_percentage: float

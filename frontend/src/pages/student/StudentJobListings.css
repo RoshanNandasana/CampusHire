@@ -84,10 +84,24 @@
 .job-card {
   display: flex;
   flex-direction: column;
+  position: relative;
   border-radius: 16px;
   border: 1px solid rgba(173, 191, 225, 0.55);
   background: linear-gradient(140deg, rgba(255, 255, 255, 0.94), rgba(244, 250, 255, 0.98));
   padding: 1rem 1.1rem;
+}
+
+.status-badge.status-applied {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1f6f3a;
+  background: rgba(66, 185, 131, 0.18);
+  border: 1px solid rgba(66, 185, 131, 0.35);
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
 }
 
 .job-header {

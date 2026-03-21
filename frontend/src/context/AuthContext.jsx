@@ -7,21 +7,31 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const normalizeUser = (userData) => {
+    if (!userData || typeof userData !== 'object') return null;
+    return {
+      ...userData,
+      role: typeof userData.role === 'string' ? userData.role.toLowerCase() : userData.role,
+    };
+  };
+
   // Initialize from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      const userData = JSON.parse(storedUser);
+      const userData = normalizeUser(JSON.parse(storedUser));
       setUser(userData);
       setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(userData));
     }
     setLoading(false);
   }, []);
 
   const login = (userData) => {
-    setUser(userData);
+    const normalized = normalizeUser(userData);
+    setUser(normalized);
     setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(normalized));
   };
 
   const logout = () => {
@@ -31,9 +41,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = (userData) => {
-    setUser(userData);
+    const normalized = normalizeUser(userData);
+    setUser(normalized);
     setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(normalized));
   };
 
   return (

@@ -15,7 +15,7 @@ import requests
 from psycopg2.extras import Json
 
 BASE = "http://localhost:8000/api/v1"
-DB_DSN = "dbname=cpms_db user=cpms password=cpms host=localhost port=5432"
+DB_DSN = "dbname=campushire_db user=campushire password=campushire host=localhost port=5432"
 
 PASS = "[PASS]"
 FAIL = "[FAIL]"

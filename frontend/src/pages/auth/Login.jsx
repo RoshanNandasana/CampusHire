@@ -39,11 +39,13 @@ const Login = () => {
         id: authData.user_id,
         email: authData.email,
         name: authData.email?.split('@')?.[0] || 'user',
-        role: authData.role,
+        role: String(authData.role || '').toLowerCase(),
         token: authData.access_token,
         refreshToken: authData.refresh_token,
         studentId: authData.student_id,
         departmentId: authData.department_id,
+        companyId: authData.company_id,
+        companyName: authData.company_name,
       };
 
       login(user);

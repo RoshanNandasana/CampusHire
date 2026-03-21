@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import json
+import mimetypes
+import os
 import uuid
 from datetime import datetime
+from urllib.parse import urlparse
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.company import Company
+from app.models.company_recruiter import CompanyRecruiter
+from app.models.departments import Department
 from app.models.interview_rounds import InterviewRound
 from app.models.job_application import JobApplication
 from app.models.job_eligibility import JobEligibility
@@ -17,20 +22,79 @@ from app.models.job_skills import JobSkill
 from app.models.jobs import Job
 from app.models.offers import Offer
 from app.models.placement_drives import PlacementDrive
+from app.models.tpo_coordinator import TPOCoordinator
 from app.models.student_document import StudentDocument
 from app.models.student_skills import StudentSkill
 from app.models.students import Student
 from app.models.user import User
+from app.core.config import settings
+from app.storage import minio_client
 
 
 class RecruiterService:
     @staticmethod
     async def _get_company_or_404(db: AsyncSession, current_user_id: uuid.UUID) -> Company:
+        # Primary path: account owner with COMPANY role mapped directly to Company.user_id.
         row = await db.execute(select(Company).where(Company.user_id == current_user_id))
         company = row.scalar_one_or_none()
-        if not company:
-            raise HTTPException(404, "Recruiter company profile not found")
-        return company
+        if company:
+            return company
+
+        # Fallback path: recruiter sub-account resolved via company_recruiters.email.
+        user_row = await db.execute(select(User.email).where(User.id == current_user_id))
+        user_email = user_row.scalar_one_or_none()
+        if user_email:
+            recruiter_row = await db.execute(
+                select(Company)
+                .join(CompanyRecruiter, CompanyRecruiter.company_id == Company.id)
+                .where(func.lower(CompanyRecruiter.email) == user_email.lower())
+                .limit(1)
+            )
+            company = recruiter_row.scalar_one_or_none()
+            if company:
+                return company
+
+        raise HTTPException(404, "Recruiter company profile not found")
+
+    @staticmethod
+    async def _resolve_target_departments(db: AsyncSession, requested_department_id: uuid.UUID | None) -> list[Department]:
+        if requested_department_id:
+            row = await db.execute(select(Department).where(Department.id == requested_department_id))
+            department = row.scalar_one_or_none()
+            if not department:
+                raise HTTPException(404, "Selected department not found")
+            return [department]
+
+        row = await db.execute(select(Department).order_by(Department.name.asc()))
+        departments = row.scalars().all()
+        if not departments:
+            raise HTTPException(400, "No department configured. Ask TPO/Admin to create a department first.")
+        return departments
+
+    @staticmethod
+    async def _ensure_active_tpo_for_departments(db: AsyncSession, departments: list[Department]) -> None:
+        if not departments:
+            return
+
+        department_ids = [department.id for department in departments]
+        rows = await db.execute(
+            select(TPOCoordinator.department_id)
+            .join(User, User.id == TPOCoordinator.user_id)
+            .where(TPOCoordinator.department_id.in_(department_ids))
+            .where(User.is_active.is_(True))
+            .distinct()
+        )
+        active_department_ids = set(rows.scalars().all())
+        missing_departments = [
+            department.name
+            for department in departments
+            if department.id not in active_department_ids
+        ]
+        if missing_departments:
+            raise HTTPException(
+                400,
+                "No active TPO assigned for selected department(s): " + ", ".join(missing_departments),
+            )
 
     @staticmethod
     def _parse_job_meta(description: str) -> tuple[str, dict]:
@@ -50,11 +114,54 @@ class RecruiterService:
         return f"{description.strip()}\n<!--META:{json.dumps(meta)}-->"
 
     @staticmethod
+    def _extract_object_name_from_url(file_url: str) -> str | None:
+        """
+        Robustly extracts object name from MinIO URL.
+        Handles different URL formats and hostnames (localhost, minio, IP addresses, etc.)
+        """
+        if not file_url or not isinstance(file_url, str):
+            return None
+        
+        file_url = file_url.strip()
+        if not file_url:
+            return None
+        
+        try:
+            parsed = urlparse(file_url)
+            path = (parsed.path or "").lstrip("/")
+            
+            bucket_name = settings.minio_bucket_materials
+            bucket_prefix = f"{bucket_name}/"
+            
+            # Try exact prefix match first
+            if path.startswith(bucket_prefix):
+                object_name = path[len(bucket_prefix):]
+                if object_name:
+                    return object_name
+            
+            # Fallback: split by bucket name and take everything after it
+            if f"/{bucket_name}/" in path:
+                parts = path.split(f"/{bucket_name}/", 1)
+                if len(parts) == 2 and parts[1]:
+                    return parts[1]
+            
+            return None
+        except Exception:
+            return None
+
+    @staticmethod
     async def post_job(db: AsyncSession, current_user_id: uuid.UUID, data) -> dict:
         company = await RecruiterService._get_company_or_404(db, current_user_id)
 
-        drive_date = datetime.fromisoformat(data.driveDate)
-        deadline = datetime.fromisoformat(data.deadline)
+        try:
+            drive_date = datetime.fromisoformat(data.driveDate)
+            deadline = datetime.fromisoformat(data.deadline)
+        except ValueError as exc:
+            raise HTTPException(422, "driveDate and deadline must be valid ISO date values") from exc
+
+        target_departments = await RecruiterService._resolve_target_departments(db, data.department_id)
+        if data.department_id:
+            await RecruiterService._ensure_active_tpo_for_departments(db, target_departments)
 
         drive = PlacementDrive(
             company_id=company.id,
@@ -68,6 +175,9 @@ class RecruiterService:
 
         meta = {
             "openings": data.openings,
+            "minCGPA": data.minCGPA,
+            "departmentScope": "SINGLE" if len(target_departments) == 1 else "ALL",
+            "departmentIds": [str(dept.id) for dept in target_departments],
             "contactName": data.contactName,
             "contactRole": data.contactRole,
             "contactEmail": data.contactEmail,
@@ -90,13 +200,15 @@ class RecruiterService:
         db.add(job)
         await db.flush()
 
-        elig = JobEligibility(
-            job_id=job.id,
-            department_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
-            min_cgpa=data.minCGPA,
-            max_backlogs=99,
-        )
-        db.add(elig)
+        for department in target_departments:
+            db.add(
+                JobEligibility(
+                    job_id=job.id,
+                    department_id=department.id,
+                    min_cgpa=data.minCGPA,
+                    max_backlogs=99,
+                )
+            )
 
         db.add(JobLocation(job_id=job.id, location=data.location))
         for skill in data.skills:
@@ -110,7 +222,39 @@ class RecruiterService:
             db.add(InterviewRound(job_id=job.id, name=round_name, round_order=index))
 
         await db.commit()
-        return {"message": "Job request submitted to TPO", "jobId": str(job.id)}
+        return {
+            "message": "Job request submitted to TPO",
+            "jobId": str(job.id),
+            "departmentIds": [str(dept.id) for dept in target_departments],
+        }
+
+    @staticmethod
+    async def list_departments(db: AsyncSession) -> dict:
+        rows = await db.execute(select(Department).order_by(Department.name.asc()))
+        departments = rows.scalars().all()
+
+        tpo_count_rows = await db.execute(
+            select(TPOCoordinator.department_id, func.count(TPOCoordinator.id))
+            .join(User, User.id == TPOCoordinator.user_id)
+            .where(User.is_active.is_(True))
+            .group_by(TPOCoordinator.department_id)
+        )
+        active_tpo_counts = {
+            str(department_id): int(count)
+            for department_id, count in tpo_count_rows.all()
+        }
+
+        return {
+            "departments": [
+                {
+                    "id": str(department.id),
+                    "name": department.name,
+                    "hasActiveTpo": active_tpo_counts.get(str(department.id), 0) > 0,
+                    "activeTpoCount": active_tpo_counts.get(str(department.id), 0),
+                }
+                for department in departments
+            ]
+        }
 
     @staticmethod
     async def get_jobs(db: AsyncSession, current_user_id: uuid.UUID) -> dict:
@@ -178,26 +322,67 @@ class RecruiterService:
     async def get_applicants(db: AsyncSession, current_user_id: uuid.UUID) -> dict:
         company = await RecruiterService._get_company_or_404(db, current_user_id)
         rows = await db.execute(
-            select(JobApplication, Job, Student, User)
+            select(JobApplication, Job, Student, User, Department.name)
             .join(Job, Job.id == JobApplication.job_id)
             .join(Student, Student.id == JobApplication.student_id)
             .join(User, User.id == Student.user_id)
+            .join(Department, Department.id == Student.department_id, isouter=True)
             .where(Job.company_id == company.id)
             .order_by(JobApplication.created_at.desc())
         )
 
         apps = []
-        for app, job, student, user in rows.all():
-            doc_rows = await db.execute(select(StudentDocument).where(StudentDocument.student_id == student.id))
-            docs = [
-                {
+        cleaned_students: set[uuid.UUID] = set()
+        demo_docs_deleted = False
+        for app, job, student, user, department_name in rows.all():
+            if student.id not in cleaned_students:
+                cleanup_result = await db.execute(
+                    delete(StudentDocument)
+                    .where(StudentDocument.student_id == student.id)
+                    .where(func.lower(StudentDocument.file_url).like("%demo%"))
+                )
+                if getattr(cleanup_result, "rowcount", 0):
+                    demo_docs_deleted = True
+                cleaned_students.add(student.id)
+
+            doc_rows = await db.execute(
+                select(StudentDocument)
+                .where(StudentDocument.student_id == student.id)
+                .order_by(StudentDocument.created_at.desc())
+            )
+
+            docs: list[dict] = []
+            seen_types: set[str] = set()
+            fallback_demo_docs: list[dict] = []
+            fallback_demo_types: set[str] = set()
+
+            for d in doc_rows.scalars().all():
+                if d.document_type == "PROFILE_META_JSON":
+                    continue
+
+                file_name = os.path.basename(urlparse(d.file_url or "").path) or d.document_type
+                normalized_name = file_name.lower()
+                is_demo_artifact = "demo" in normalized_name
+
+                item = {
                     "name": d.document_type,
-                    "fileName": d.file_url,
+                    "fileName": file_name,
+                    "fileUrl": d.file_url,
                     "status": "verified",
                 }
-                for d in doc_rows.scalars().all()
-                if d.document_type != "PROFILE_META_JSON"
-            ]
+
+                # Prefer one latest non-demo document per document type.
+                if not is_demo_artifact and d.document_type not in seen_types:
+                    docs.append(item)
+                    seen_types.add(d.document_type)
+                    continue
+
+                # Keep a fallback in case a type has only demo docs.
+                if is_demo_artifact and d.document_type not in fallback_demo_types and d.document_type not in seen_types:
+                    fallback_demo_docs.append(item)
+                    fallback_demo_types.add(d.document_type)
+
+            docs.extend(fallback_demo_docs)
             skill_rows = await db.execute(select(StudentSkill.skill_name).where(StudentSkill.student_id == student.id))
             student_skills = [row[0] for row in skill_rows.all()]
 
@@ -214,7 +399,7 @@ class RecruiterService:
                     "student": {
                         "fullName": user.email.split("@")[0].replace(".", " ").title(),
                         "enrollmentNo": student.enrollment_number,
-                        "branch": student.department.name if getattr(student, "department", None) else "Department",
+                        "branch": department_name or "Department",
                         "year": "Final Year",
                         "cgpa": student.cgpa,
                         "email": user.email,
@@ -239,7 +424,69 @@ class RecruiterService:
                 }
             )
 
+        if demo_docs_deleted:
+            await db.commit()
+
         return {"applications": apps}
+
+    @staticmethod
+    async def get_applicant_document(
+        db: AsyncSession,
+        current_user_id: uuid.UUID,
+        application_id: uuid.UUID,
+        file_url: str,
+    ) -> dict:
+        company = await RecruiterService._get_company_or_404(db, current_user_id)
+
+        app_row = await db.execute(
+            select(JobApplication, Job)
+            .join(Job, Job.id == JobApplication.job_id)
+            .where(JobApplication.id == application_id)
+            .where(Job.company_id == company.id)
+        )
+        data = app_row.one_or_none()
+        if not data:
+            raise HTTPException(404, "Application not found")
+
+        application, _ = data
+        requested_object_name = RecruiterService._extract_object_name_from_url(file_url)
+        if not requested_object_name:
+            raise HTTPException(400, "Invalid document URL")
+
+        docs_rows = await db.execute(
+            select(StudentDocument)
+            .where(StudentDocument.student_id == application.student_id)
+            .order_by(StudentDocument.created_at.desc())
+        )
+        docs = docs_rows.scalars().all()
+
+        allowed_object_names = {
+            object_name
+            for object_name in (
+                RecruiterService._extract_object_name_from_url(doc.file_url)
+                for doc in docs
+                if doc.document_type != "PROFILE_META_JSON"
+            )
+            if object_name
+        }
+
+        if requested_object_name not in allowed_object_names:
+            raise HTTPException(404, "Document not found")
+
+        try:
+            content, content_type = minio_client.get_object_bytes(settings.minio_bucket_materials, requested_object_name)
+        except Exception as exc:
+            raise HTTPException(404, "Unable to load document") from exc
+
+        guessed_type, _ = mimetypes.guess_type(requested_object_name)
+        media_type = guessed_type or content_type or "application/octet-stream"
+        filename = os.path.basename(requested_object_name)
+
+        return {
+            "content": content,
+            "media_type": media_type,
+            "filename": filename,
+        }
 
     @staticmethod
     def _app_status_to_frontend(status: str) -> str:

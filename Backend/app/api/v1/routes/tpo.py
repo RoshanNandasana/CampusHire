@@ -1,4 +1,5 @@
 import uuid
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -245,6 +246,20 @@ async def list_materials(
     current_user=_tpo_only,
 ):
     return await TPOService.list_study_materials(db, current_user.id)
+
+
+@router.get("/materials/{material_id}/file")
+async def get_material_file(
+    material_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=_tpo_only,
+):
+    payload = await TPOService.get_study_material_file(db, current_user.id, material_id)
+    return StreamingResponse(
+        BytesIO(payload["content"]),
+        media_type=payload["media_type"],
+        headers={"Content-Disposition": f"inline; filename=\"{payload['filename']}\""},
+    )
 
 
 @router.put("/materials/{material_id}")

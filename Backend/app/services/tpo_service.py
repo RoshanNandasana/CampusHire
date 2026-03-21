@@ -1,8 +1,11 @@
 import csv
 import io
+import mimetypes
+import os
 import secrets
 import uuid
 from datetime import datetime
+from urllib.parse import urlparse
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
@@ -21,6 +24,42 @@ from app.storage import minio_client
 
 
 class TPOService:
+
+    @staticmethod
+    def _extract_object_name_from_url(file_url: str) -> str | None:
+        """
+        Robustly extracts object name from MinIO URL.
+        Handles different URL formats and hostnames (localhost, minio, IP addresses, etc.)
+        """
+        if not file_url or not isinstance(file_url, str):
+            return None
+        
+        file_url = file_url.strip()
+        if not file_url:
+            return None
+        
+        try:
+            parsed = urlparse(file_url)
+            path = (parsed.path or "").lstrip("/")
+            
+            bucket_name = settings.minio_bucket_materials
+            bucket_prefix = f"{bucket_name}/"
+            
+            # Try exact prefix match first
+            if path.startswith(bucket_prefix):
+                object_name = path[len(bucket_prefix):]
+                if object_name:
+                    return object_name
+            
+            # Fallback: split by bucket name and take everything after it
+            if f"/{bucket_name}/" in path:
+                parts = path.split(f"/{bucket_name}/", 1)
+                if len(parts) == 2 and parts[1]:
+                    return parts[1]
+            
+            return None
+        except Exception:
+            return None
 
     @staticmethod
     async def _get_department_id_or_404(db: AsyncSession, current_user_id: uuid.UUID) -> uuid.UUID:
@@ -51,11 +90,9 @@ class TPOService:
         if not role:
             raise HTTPException(500, "STUDENT role not found")
 
-        generated_password = None
-        final_password = data.password
+        final_password = (data.password or "").strip()
         if not final_password:
-            generated_password = secrets.token_urlsafe(10)
-            final_password = generated_password
+            raise HTTPException(400, "Password is required and must be at least 8 characters")
 
         user = User(
             email=data.email,
@@ -99,7 +136,7 @@ class TPOService:
             "user_id": user.id,
             "email": user.email,
             "enrollment_number": student.enrollment_number,
-            "generated_password": generated_password,
+            "generated_password": None,
         }
 
     @staticmethod
@@ -182,8 +219,12 @@ class TPOService:
 
             final_password = raw_password
             if not final_password:
-                generated_password = secrets.token_urlsafe(10)
-                final_password = generated_password
+                errors.append({"line": idx, "error": "password is required"})
+                continue
+
+            if len(final_password) < 8:
+                errors.append({"line": idx, "error": "password must be at least 8 characters"})
+                continue
 
             user = User(
                 email=email,
@@ -517,6 +558,40 @@ class TPOService:
         return {"materials": materials}
 
     @staticmethod
+    async def get_study_material_file(
+        db: AsyncSession,
+        current_user_id: uuid.UUID,
+        material_id: uuid.UUID,
+    ) -> dict:
+        department_id = await TPOService._get_department_id_or_404(db, current_user_id)
+        material = await tpo_feature_repo.get_study_material(db, material_id)
+        if not material:
+            raise HTTPException(404, "Material not found")
+
+        if not material.is_global and material.department_id != department_id:
+            raise HTTPException(403, "You are not allowed to access this material")
+
+        # Robustly extract object name, handling different hostnames and URL formats
+        object_name = TPOService._extract_object_name_from_url(material.file_url)
+        if not object_name:
+            raise HTTPException(400, "Invalid material file URL")
+
+        try:
+            content, content_type = minio_client.get_object_bytes(settings.minio_bucket_materials, object_name)
+        except Exception as exc:
+            raise HTTPException(404, "Unable to load material file") from exc
+
+        guessed_type, _ = mimetypes.guess_type(object_name)
+        media_type = content_type or guessed_type or "application/octet-stream"
+        filename = os.path.basename(object_name)
+
+        return {
+            "content": content,
+            "media_type": media_type,
+            "filename": filename,
+        }
+
+    @staticmethod
     async def update_study_material(
         db: AsyncSession,
         current_user_id: uuid.UUID,
@@ -571,9 +646,10 @@ class TPOService:
         if material.created_by != current_user_id:
             raise HTTPException(403, "You can delete only materials uploaded by you")
 
-        object_name = material.file_url.split(f"/{settings.minio_bucket_materials}/", maxsplit=1)
-        if len(object_name) == 2:
-            minio_client.delete_object(settings.minio_bucket_materials, object_name[1])
+        # Robustly extract object name for deletion
+        object_name = TPOService._extract_object_name_from_url(material.file_url)
+        if object_name:
+            minio_client.delete_object(settings.minio_bucket_materials, object_name)
 
         await tpo_feature_repo.delete_study_material(db, material)
         await db.commit()
@@ -607,12 +683,14 @@ class TPOService:
     @staticmethod
     async def get_reports_dashboard(db: AsyncSession, current_user_id: uuid.UUID) -> dict:
         department_id = await TPOService._get_department_id_or_404(db, current_user_id)
+        department_name = await tpo_feature_repo.get_department_name(db, department_id)
 
         placement_stats = await tpo_feature_repo.get_placement_stats_for_department(db, department_id)
         company_breakdown = await tpo_feature_repo.get_company_breakdown_for_department(db, department_id)
         student_report = await tpo_feature_repo.get_student_report_for_department(db, department_id)
 
         return {
+            "department_name": department_name,
             "placement_stats": placement_stats,
             "company_breakdown": company_breakdown,
             "student_report": student_report,

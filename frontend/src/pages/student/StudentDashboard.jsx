@@ -5,81 +5,16 @@ import './StudentDashboard.css';
 
 const StudentDashboard = () => {
   const [stats, setStats] = useState({
-    applied: 18,
-    pending: 6,
-    rejected: 4,
-    shortlisted: 8,
-    upcomingTasks: 5,
+    applied: 0,
+    pending: 0,
+    rejected: 0,
+    shortlisted: 0,
+    upcomingTasks: 0,
   });
 
-  const [recentApplications, setRecentApplications] = useState([
-    {
-      id: 1,
-      company: 'Google',
-      position: 'Software Engineer',
-      status: 'shortlisted',
-      appliedDate: '2026-03-10',
-    },
-    {
-      id: 2,
-      company: 'Microsoft',
-      position: 'Product Manager',
-      status: 'pending',
-      appliedDate: '2026-03-08',
-    },
-    {
-      id: 3,
-      company: 'Amazon',
-      position: 'Data Engineer',
-      status: 'rejected',
-      appliedDate: '2026-03-04',
-    },
-    {
-      id: 4,
-      company: 'TCS',
-      position: 'Systems Engineer',
-      status: 'applied',
-      appliedDate: '2026-03-13',
-    },
-  ]);
-
-  const [upcomingPlacementTasks, setUpcomingPlacementTasks] = useState([
-    {
-      id: 1,
-      company: 'Infosys',
-      task: 'Aptitude Test',
-      date: '2026-03-20',
-      time: '10:00 AM',
-    },
-    {
-      id: 2,
-      company: 'Wipro',
-      task: 'Coding Round',
-      date: '2026-03-22',
-      time: '09:30 AM',
-    },
-    {
-      id: 3,
-      company: 'Accenture',
-      task: 'Technical Interview',
-      date: '2026-03-24',
-      time: '02:00 PM',
-    },
-    {
-      id: 4,
-      company: 'Cognizant',
-      task: 'HR Round',
-      date: '2026-03-26',
-      time: '11:00 AM',
-    },
-    {
-      id: 5,
-      company: 'Capgemini',
-      task: 'Group Discussion',
-      date: '2026-03-28',
-      time: '03:00 PM',
-    },
-  ]);
+  const [recentApplications, setRecentApplications] = useState([]);
+  const [upcomingPlacementTasks, setUpcomingPlacementTasks] = useState([]);
+  const [loadError, setLoadError] = useState('');
 
   const statusBadgeClass = (status) => {
     switch (status) {
@@ -118,19 +53,26 @@ const StudentDashboard = () => {
     let isMounted = true;
     const loadDashboard = async () => {
       try {
+        setLoadError('');
         const response = await studentAPI.getDashboard();
         const data = response?.data;
         if (!isMounted || !data) return;
 
-        setStats((prev) => ({ ...prev, ...(data.stats || {}) }));
-        if (Array.isArray(data.recentApplications) && data.recentApplications.length > 0) {
-          setRecentApplications(data.recentApplications);
-        }
-        if (Array.isArray(data.upcomingPlacementTasks)) {
-          setUpcomingPlacementTasks(data.upcomingPlacementTasks);
-        }
+        setStats({
+          applied: Number(data?.stats?.applied || 0),
+          pending: Number(data?.stats?.pending || 0),
+          rejected: Number(data?.stats?.rejected || 0),
+          shortlisted: Number(data?.stats?.shortlisted || 0),
+          upcomingTasks: Number(data?.stats?.upcomingTasks || 0),
+        });
+        setRecentApplications(Array.isArray(data?.recentApplications) ? data.recentApplications : []);
+        setUpcomingPlacementTasks(Array.isArray(data?.upcomingPlacementTasks) ? data.upcomingPlacementTasks : []);
       } catch (error) {
-        // Keep existing UI data as fallback.
+        if (!isMounted) return;
+        setStats({ applied: 0, pending: 0, rejected: 0, shortlisted: 0, upcomingTasks: 0 });
+        setRecentApplications([]);
+        setUpcomingPlacementTasks([]);
+        setLoadError(error?.response?.data?.detail || 'Unable to load dashboard data right now.');
       }
     };
 
@@ -149,6 +91,8 @@ const StudentDashboard = () => {
           <p>Simple placement tracking for applications, status, and upcoming tasks.</p>
         </div>
       </section>
+
+      {loadError ? <p className="task-note">{loadError}</p> : null}
 
       <div className="stats-grid simple-stats-grid">
         <Card className="stat-card stat-blue">
@@ -220,6 +164,7 @@ const StudentDashboard = () => {
                   </div>
                 </div>
               ))}
+              {recentApplications.length === 0 ? <p className="task-note">No applications yet.</p> : null}
             </div>
           </Card>
         </div>
@@ -243,6 +188,7 @@ const StudentDashboard = () => {
                   </div>
                 );
               })}
+              {upcomingPlacementTasks.length === 0 ? <p className="task-note">No upcoming tasks.</p> : null}
             </div>
           </Card>
         </div>

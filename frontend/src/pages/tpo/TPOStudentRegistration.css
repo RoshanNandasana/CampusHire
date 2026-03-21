@@ -1,0 +1,111 @@
+.tpo-student-registration {
+  width: 100%;
+  display: grid;
+  gap: 1rem;
+}
+
+.registration-header h1 {
+  margin: 0;
+}
+
+.registration-header p {
+  margin: 0.35rem 0 0;
+  color: var(--text-light);
+}
+
+.registration-message {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(70, 112, 199, 0.35);
+  background: rgba(70, 112, 199, 0.12);
+  color: #25447d;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.registration-card {
+  border: 1px solid rgba(167, 190, 225, 0.45);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-group label {
+  font-size: 0.82rem;
+  color: #5f759f;
+  font-weight: 700;
+}
+
+.csv-note {
+  margin: 0 0 0.8rem;
+  color: #5e739d;
+  font-size: 0.84rem;
+}
+
+.result-box {
+  margin-top: 0.85rem;
+  border: 1px solid rgba(166, 188, 224, 0.5);
+  background: rgba(246, 250, 255, 0.95);
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+}
+
+.result-box p {
+  margin: 0.2rem 0;
+  font-size: 0.84rem;
+  color: #3a5383;
+}
+
+.error-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+  color: #ad2c2c;
+  font-size: 0.8rem;
+}
+
+.students-table-wrap {
+  overflow-x: auto;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.students-table th {
+  text-align: left;
+  padding: 0.75rem;
+  background: #f1f4f9;
+  border-bottom: 2px solid rgba(162, 186, 224, 0.6);
+  color: #2f4677;
+  font-size: 0.82rem;
+}
+
+.students-table td {
+  padding: 0.72rem;
+  border-bottom: 1px solid rgba(171, 193, 227, 0.45);
+  color: #3a5383;
+  font-size: 0.83rem;
+}
+
+.empty-students {
+  text-align: center;
+  color: #687ea6;
+}

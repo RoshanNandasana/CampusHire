@@ -1,6 +1,8 @@
 import uuid
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
@@ -24,6 +26,15 @@ async def recruiter_dashboard(
     current_user=_recruiter_only,
 ):
     return await RecruiterService.get_dashboard(db, current_user.id)
+
+
+@router.get("/departments")
+async def recruiter_departments(
+    db: AsyncSession = Depends(get_db),
+    current_user=_recruiter_only,
+):
+    _ = current_user
+    return await RecruiterService.list_departments(db)
 
 
 @router.post("/jobs", status_code=201)
@@ -62,6 +73,21 @@ async def recruiter_applicant_profile(
     if not target:
         raise HTTPException(status_code=404, detail="Applicant not found")
     return target
+
+
+@router.get("/applications/{application_id}/document")
+async def recruiter_view_applicant_document(
+    application_id: uuid.UUID,
+    url: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=_recruiter_only,
+):
+    payload = await RecruiterService.get_applicant_document(db, current_user.id, application_id, url)
+    return StreamingResponse(
+        BytesIO(payload["content"]),
+        media_type=payload["media_type"],
+        headers={"Content-Disposition": f"inline; filename=\"{payload['filename']}\""},
+    )
 
 
 @router.put("/applications/{application_id}")

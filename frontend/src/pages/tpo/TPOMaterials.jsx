@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import { tpoAPI } from '../../services/api';
+import fileDownloadService from '../../services/fileDownloadService';
 import './TPOMaterials.css';
 
 const categoryMap = {
-  Aptitude: 'APTITUDE',
+  Aptitude: 'Aptitude',
   DSA: 'DSA',
-  'System Design': 'SYSTEM_DESIGN',
-  'Core Subjects': 'CORE',
-  Other: 'OTHER',
+  'System Design': 'System Design',
+  'Core Subjects': 'Core',
+  Other: 'Other',
 };
 
 const TPOMaterials = () => {
@@ -117,6 +118,16 @@ const TPOMaterials = () => {
     }
   };
 
+  const openMaterial = async (materialId) => {
+    try {
+      const material = materials.find(m => m.id === materialId);
+      const filename = material?.title || 'material';
+      await fileDownloadService.viewTPOMaterial(materialId, filename);
+    } catch (error) {
+      setMessage(error?.message || 'Unable to open material file.');
+    }
+  };
+
   return (
     <div className="tpo-materials-page">
       <div className="materials-header">
@@ -162,9 +173,6 @@ const TPOMaterials = () => {
                   onChange={(e) => setDraft({ ...draft, type: e.target.value, file: null })}
                 >
                   <option value="PDF">PDF</option>
-                  <option value="DOC">DOC</option>
-                  <option value="PPT">PPT</option>
-                  <option value="LINK">LINK</option>
                 </select>
               </div>
 
@@ -247,9 +255,13 @@ const TPOMaterials = () => {
                   </div>
                   <div className="material-row-actions">
                     <span className="file-type">PDF</span>
-                    <a className="btn btn-outlined btn-small" href={item.file_url} target="_blank" rel="noreferrer">
+                    <button
+                      type="button"
+                      className="btn btn-outlined btn-small"
+                      onClick={() => openMaterial(item.id)}
+                    >
                       Open
-                    </a>
+                    </button>
                     <button type="button" className="btn btn-danger btn-small" onClick={() => removeMaterial(item.id)}>
                       Remove
                     </button>

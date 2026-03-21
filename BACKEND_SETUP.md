@@ -21,7 +21,10 @@ cp Backend/.env.example Backend/.env
 # vim Backend/.env
 
 # Start all services (PostgreSQL, MinIO, Backend, Frontend)
-docker-compose up --build
+docker-compose -f docker-compose.yml up --build
+
+# Important: use only the root compose file (single PostgreSQL source)
+# /workspaces/CampusHire/docker-compose.yml
 
 # Services will be available at:
 # - Frontend: http://localhost:3000

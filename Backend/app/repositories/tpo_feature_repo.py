@@ -13,6 +13,7 @@ from app.models.interview_feedback import InterviewFeedback
 from app.models.interview_rounds import InterviewRound
 from app.models.job_application import JobApplication
 from app.models.job_eligibility import JobEligibility
+from app.models.job_location import JobLocation
 from app.models.jobs import Job
 from app.models.material_acces import MaterialAccess
 from app.models.offers import Offer
@@ -34,6 +35,13 @@ PLACED_OFFER_STATUSES = {"ACCEPTED", "JOINED", "ACCEPTED_BUT_NOT_JOINED"}
 async def get_tpo_department_id(db: AsyncSession, user_id: uuid.UUID) -> uuid.UUID | None:
     result = await db.execute(
         select(TPOCoordinator.department_id).where(TPOCoordinator.user_id == user_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_department_name(db: AsyncSession, department_id: uuid.UUID) -> str | None:
+    result = await db.execute(
+        select(Department.name).where(Department.id == department_id)
     )
     return result.scalar_one_or_none()
 
@@ -206,6 +214,8 @@ async def get_student_timeline(
             JobApplication.updated_at,
             Job.id,
             Job.title,
+            Job.salary,
+            Job.application_deadline,
             Company.id,
             Company.name,
         )
@@ -217,6 +227,18 @@ async def get_student_timeline(
     applications_raw = app_rows.all()
 
     application_ids = [row[0] for row in applications_raw]
+    job_ids = [row[4] for row in applications_raw]
+
+    location_map: dict[uuid.UUID, str] = {}
+    if job_ids:
+        location_rows = await db.execute(
+            select(JobLocation.job_id, JobLocation.location)
+            .where(JobLocation.job_id.in_(job_ids))
+            .order_by(JobLocation.job_id.asc())
+        )
+        for job_id, location in location_rows.all():
+            if job_id not in location_map and location:
+                location_map[job_id] = location
 
     stage_map: dict[uuid.UUID, list[dict]] = {}
     if application_ids:
@@ -306,6 +328,8 @@ async def get_student_timeline(
         updated_at,
         job_id,
         job_title,
+        job_salary,
+        job_deadline,
         company_id,
         company_name,
     ) in applications_raw:
@@ -318,6 +342,9 @@ async def get_student_timeline(
                 "job": {
                     "id": job_id,
                     "title": job_title,
+                    "salary": job_salary,
+                    "application_deadline": job_deadline,
+                    "location": location_map.get(job_id, ""),
                     "company": {
                         "id": company_id,
                         "name": company_name,
@@ -463,7 +490,57 @@ async def list_active_jobs_for_department(db: AsyncSession, department_id: uuid.
     return payload
 
 
-async def get_job_pipeline_counts(db: AsyncSession, job_id: uuid.UUID, department_id: uuid.UUID) -> dict:
+async def list_active_jobs(db: AsyncSession) -> list[dict]:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    rows = await db.execute(
+        select(
+            Job.id,
+            Job.title,
+            Job.description,
+            Job.salary,
+            Job.application_deadline,
+            Job.created_at,
+            Job.updated_at,
+            PlacementDrive.status,
+            Company.id,
+            Company.name,
+        )
+        .join(Company, Company.id == Job.company_id)
+        .outerjoin(PlacementDrive, PlacementDrive.id == Job.drive_id)
+        .where(Job.application_deadline >= now)
+        .order_by(Job.application_deadline.asc())
+    )
+
+    payload: list[dict] = []
+    for (
+        job_id,
+        title,
+        description,
+        salary,
+        application_deadline,
+        created_at,
+        updated_at,
+        approval_status,
+        company_id,
+        company_name,
+    ) in rows.all():
+        payload.append(
+            {
+                "id": job_id,
+                "title": title,
+                "description": description,
+                "salary": salary,
+                "application_deadline": application_deadline,
+                "created_at": created_at,
+                "updated_at": updated_at,
+                "approval_status": (approval_status or "PENDING").upper(),
+                "company": {"id": company_id, "name": company_name},
+            }
+        )
+    return payload
+
+
+async def get_job_pipeline_counts(db: AsyncSession, job_id: uuid.UUID, department_id: uuid.UUID | None) -> dict:
     base_stmt = (
         select(
             JobApplication.id,
@@ -471,8 +548,9 @@ async def get_job_pipeline_counts(db: AsyncSession, job_id: uuid.UUID, departmen
         )
         .join(Student, Student.id == JobApplication.student_id)
         .where(JobApplication.job_id == job_id)
-        .where(Student.department_id == department_id)
     )
+    if department_id:
+        base_stmt = base_stmt.where(Student.department_id == department_id)
     app_rows = await db.execute(base_stmt)
     apps = app_rows.all()
 

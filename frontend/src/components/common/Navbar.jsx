@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { MdLogout, MdSchool, MdDashboard, MdPerson } from 'react-icons/md';
+import { MdLogout, MdSchool, MdDashboard, MdPerson, MdPersonAdd } from 'react-icons/md';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -61,6 +61,12 @@ const Navbar = () => {
                 <MdPerson />
                 {role === 'student' ? 'Profile' : 'Workspace'}
               </Link>
+              {role === 'tpo' ? (
+                <Link to="/tpo/student-registration" className="navbar-link-pill">
+                  <MdPersonAdd />
+                  Register Students
+                </Link>
+              ) : null}
             </div>
 
             <div className="navbar-user">

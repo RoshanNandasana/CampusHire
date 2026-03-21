@@ -15,6 +15,7 @@ dependencies = [
     "python-paseto",
     "argon2-cffi",
     "httpx",
+    "pypdf",
     "minio",
     "python-multipart",
     "apscheduler",

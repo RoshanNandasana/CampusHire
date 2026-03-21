@@ -1,10 +1,14 @@
+from io import BytesIO
 import uuid
 
 import fastapi
 import sqlalchemy.ext.asyncio
+from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.core.db import get_db
 from app.core.permissions import require_roles
+from app.schemas.student_ai_schema import StudentAIChatRequest
 from app.schemas.student_schema import StudentProfileUpdateRequest
 from app.schemas.student_profile_schema import (
     StudentProjectCreate,
@@ -17,6 +21,7 @@ from app.schemas.student_profile_schema import (
     StudentSkillUpdate,
     StudentSkillResponse,
 )
+from app.services.student_ai_service import StudentAIService
 from app.services.student_service import StudentService
 
 
@@ -100,12 +105,87 @@ async def upload_resume(
     return await StudentService.upload_resume(db, current_user.id, resume)
 
 
+@router.post("/resume-chat")
+async def resume_chat(
+    data: StudentAIChatRequest,
+    db: sqlalchemy.ext.asyncio.AsyncSession = fastapi.Depends(get_db),
+    current_user=_student_only,
+):
+    return await StudentAIService.chat(db, current_user.id, data)
+
+
+@router.post("/profile/document-upload")
+async def upload_profile_document(
+    category: str = fastapi.Form(...),
+    label: str | None = fastapi.Form(None),
+    file: fastapi.UploadFile = fastapi.File(...),
+    db: sqlalchemy.ext.asyncio.AsyncSession = fastapi.Depends(get_db),
+    current_user=_student_only,
+):
+    return await StudentService.upload_profile_document(
+        db,
+        current_user.id,
+        category=category,
+        label=label,
+        file=file,
+    )
+
+
 @router.get("/materials")
 async def list_materials(
     db: sqlalchemy.ext.asyncio.AsyncSession = fastapi.Depends(get_db),
     current_user=_student_only,
 ):
     return await StudentService.list_materials(db, current_user.id)
+
+
+@router.get("/materials/{material_id}/file")
+async def get_material_file(
+    material_id: uuid.UUID,
+    db: sqlalchemy.ext.asyncio.AsyncSession = fastapi.Depends(get_db),
+    current_user=_student_only,
+):
+    payload = await StudentService.get_material_file(db, current_user.id, material_id)
+    return StreamingResponse(
+        BytesIO(payload["content"]),
+        media_type=payload["media_type"],
+        headers={"Content-Disposition": f"inline; filename=\"{payload['filename']}\""},
+    )
+
+
+@router.get("/profile/document-view")
+async def view_profile_document(
+    url: str,
+    db: sqlalchemy.ext.asyncio.AsyncSession = fastapi.Depends(get_db),
+    current_user=_student_only,
+):
+    payload = await StudentService.view_profile_document(db, current_user.id, file_url=url)
+    return StreamingResponse(
+        BytesIO(payload["content"]),
+        media_type=payload["media_type"],
+        headers={"Content-Disposition": f"inline; filename=\"{payload['filename']}\""},
+    )
+
+
+@router.get("/profile/image")
+async def get_profile_image(
+    db: sqlalchemy.ext.asyncio.AsyncSession = fastapi.Depends(get_db),
+    current_user=_student_only,
+):
+    """Get the student's profile image."""
+    payload = await StudentService.get_profile_image(db, current_user.id)
+    if not payload:
+        raise HTTPException(404, "Profile image not found")
+    
+    return StreamingResponse(
+        BytesIO(payload["content"]),
+        media_type=payload["media_type"],
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 # ==================== Projects CRUD ====================

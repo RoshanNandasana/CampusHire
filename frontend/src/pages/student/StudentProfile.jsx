@@ -14,25 +14,27 @@ import {
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import StudentTopPanel from '../../components/student/StudentTopPanel';
-import { studentAPI } from '../../services/api';
+import { studentAPI, api } from '../../services/api';
+import fileDownloadService from '../../services/fileDownloadService';
 import './StudentProfile.css';
 
 const StudentProfile = () => {
-  const departmentProfile = {
-    fullName: 'John Doe',
-    enrollmentNo: 'CH-2022-041',
-    collegeEmail: 'john.doe@college.edu',
-    branch: 'Computer Science',
-    program: 'B.Tech',
-    year: 'Final Year',
-    batch: '2022 - 2026',
-    section: 'A',
-    mentor: 'Dr. R. Sharma',
+  const [departmentProfile, setDepartmentProfile] = useState({
+    fullName: '',
+    enrollmentNo: '',
+    collegeEmail: '',
+    branch: '',
+    program: '',
+    year: '',
+    batch: '',
+    section: '',
+    mentor: '',
     departmentStatus: 'Verified by Department',
-  };
+  });
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState('');
+  const [profilePhotoBlobUrl, setProfilePhotoBlobUrl] = useState('');
   const [message, setMessage] = useState('');
   const [modalState, setModalState] = useState({
     skill: false,
@@ -43,75 +45,27 @@ const StudentProfile = () => {
   });
 
   const [profileData, setProfileData] = useState({
-    personalEmail: 'john.workmail@gmail.com',
-    phone: '+91 98765 43210',
-    alternatePhone: '+91 91234 56780',
-    dateOfBirth: '2004-08-20',
-    gender: 'Male',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    address: 'Satellite Road, Ahmedabad, Gujarat',
-    linkedin: 'https://linkedin.com/in/johndoe',
-    github: 'https://github.com/johndoe',
-    portfolio: 'https://johndoe.dev',
-    summary:
-      'Final year student focused on full stack development and cloud-native applications. Open to SDE and platform roles.',
-    graduationCgpa: '8.2',
+    personalEmail: '',
+    phone: '',
+    alternatePhone: '',
+    dateOfBirth: '',
+    gender: '',
+    city: '',
+    state: '',
+    address: '',
+    linkedin: '',
+    github: '',
+    portfolio: '',
+    summary: '',
+    graduationCgpa: '',
   });
 
-  const [educationRecords, setEducationRecords] = useState([
-    {
-      id: 'ten',
-      label: 'Class 10 (SSC)',
-      board: 'CBSE',
-      institute: 'Shree Vidya Mandir School',
-      year: '2020',
-      score: '92%',
-      fileName: 'class_10_marksheet.pdf',
-    },
-    {
-      id: 'twelve',
-      label: 'Class 12 (HSC)',
-      board: 'GSEB',
-      institute: 'Shree Vidya Junior College',
-      year: '2022',
-      score: '88%',
-      fileName: 'class_12_marksheet.pdf',
-    },
-    {
-      id: 'grad',
-      label: 'Current Graduation',
-      board: 'GTU',
-      institute: 'ABC Institute of Technology',
-      year: '2026 (Expected)',
-      score: 'CGPA 8.2',
-      fileName: 'latest_sem_marksheet.pdf',
-    },
-  ]);
+  const [educationRecords, setEducationRecords] = useState([]);
 
-  const [skills, setSkills] = useState([
-    'JavaScript',
-    'React',
-    'Node.js',
-    'Python',
-    'SQL',
-    'System Design',
-  ]);
+  const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
 
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      title: 'Campus Placement Portal',
-      role: 'Full Stack Developer',
-      duration: 'Jan 2025 - Apr 2025',
-      summary: 'Built role-based placement management with dashboards and application tracking.',
-      impact: 'Reduced manual placement coordination by 40%',
-      technologies: ['React', 'FastAPI', 'PostgreSQL'],
-      repo: 'https://github.com/johndoe/campushire',
-      demo: 'https://campushire-demo.app',
-    },
-  ]);
+  const [projects, setProjects] = useState([]);
   const [projectDraft, setProjectDraft] = useState({
     title: '',
     role: '',
@@ -123,17 +77,10 @@ const StudentProfile = () => {
     demo: '',
   });
 
-  const [certifications, setCertifications] = useState([
-    'AWS Certified Cloud Practitioner',
-    'Meta React Professional Certificate',
-  ]);
+  const [certifications, setCertifications] = useState([]);
   const [newCertification, setNewCertification] = useState('');
 
-  const [additionalDocs, setAdditionalDocs] = useState([
-    { id: 'resume', label: 'Latest Resume', fileName: 'john_doe_resume.pdf' },
-    { id: 'aadhar', label: 'Government ID Proof', fileName: 'aadhar_masked.pdf' },
-    { id: 'internship', label: 'Internship Letter', fileName: 'internship_offer_letter.pdf' },
-  ]);
+  const [additionalDocs, setAdditionalDocs] = useState([]);
 
   const [educationDraft, setEducationDraft] = useState({
     label: '',
@@ -142,17 +89,57 @@ const StudentProfile = () => {
     year: '',
     score: '',
     fileName: '',
+    fileUrl: '',
   });
 
   const [documentDraft, setDocumentDraft] = useState({
     label: '',
     fileName: '',
+    fileUrl: '',
   });
 
-  const getInitials = (name) =>
+  const getDocumentUrl = (doc = {}) => {
+    const rawUrl =
+      (typeof doc.fileUrl === 'string' && doc.fileUrl.trim())
+        ? doc.fileUrl.trim()
+        : (typeof doc.fileName === 'string' && /^https?:\/\//i.test(doc.fileName))
+          ? doc.fileName.trim()
+          : '';
+
+    if (!rawUrl) return '';
+    return `/api/v1/student/profile/document-view?url=${encodeURIComponent(rawUrl)}`;
+  };
+
+  const handleViewDocument = async (doc = {}) => {
+    const rawUrl =
+      (typeof doc.fileUrl === 'string' && doc.fileUrl.trim())
+        ? doc.fileUrl.trim()
+        : (typeof doc.fileName === 'string' && /^https?:\/\//i.test(doc.fileName))
+          ? doc.fileName.trim()
+          : '';
+
+    if (!rawUrl) {
+      alert('Document URL not available');
+      return;
+    }
+
+    try {
+      const filename = doc.fileName || 'document';
+      await fileDownloadService.viewStudentDocument(rawUrl, filename);
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      alert(error.message || 'Failed to load document. Please try again.');
+    }
+  };
+
+  const uploadedAcademicDocumentsCount = educationRecords.filter(
+    (record) => Boolean(getDocumentUrl(record))
+  ).length;
+
+  const getInitials = (name = '') =>
     name
       .split(' ')
-      .map((part) => part[0])
+      .map((part) => part[0] || '')
       .join('')
       .slice(0, 2)
       .toUpperCase();
@@ -165,11 +152,66 @@ const StudentProfile = () => {
     setModalState((prev) => ({ ...prev, [key]: false }));
   };
 
-  const handlePhotoUpload = (event) => {
+  const loadProfileImageBlob = async () => {
+    try {
+      const response = await api.get(`/student/profile/image?t=${Date.now()}`, {
+        responseType: 'blob',
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+      });
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'image/png' });
+      const blobUrl = window.URL.createObjectURL(blob);
+      if (profilePhotoBlobUrl) {
+        window.URL.revokeObjectURL(profilePhotoBlobUrl);
+      }
+      setProfilePhotoBlobUrl(blobUrl);
+    } catch (error) {
+      console.error('Failed to load profile image:', error);
+      // Will fallback to showing initials
+    }
+  };
+
+  const handlePhotoUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setProfilePhoto(URL.createObjectURL(file));
-    setMessage('Profile photo updated.');
+    try {
+      const formData = new FormData();
+      formData.append('category', 'profile_photo');
+      formData.append('file', file);
+
+      const response = await studentAPI.uploadProfileDocument(formData);
+      const uploadedUrl = response?.data?.fileUrl;
+
+      setProfilePhoto(uploadedUrl || URL.createObjectURL(file));
+      
+      // Update profileData with the image URL
+      const updatedProfileData = { ...profileData, profileImage: uploadedUrl || '' };
+      setProfileData(updatedProfileData);
+      
+      // Immediately save the profile with the new photo URL
+      if (uploadedUrl) {
+        try {
+          await studentAPI.updateProfile({
+            profileData: updatedProfileData,
+            skills,
+            projects,
+            certifications,
+            educationRecords,
+            additionalDocs,
+          });
+          // Load the image blob through the API endpoint
+          await loadProfileImageBlob();
+          setMessage('✓ Profile photo uploaded and saved.');
+        } catch (saveError) {
+          setMessage('Photo uploaded but failed to save. Please click Save Details.');
+          console.error('Failed to save profile after photo upload:', saveError);
+        }
+      }
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || 'Failed to upload profile photo.');
+    }
   };
 
   const handleProfileChange = (event) => {
@@ -208,14 +250,34 @@ const StudentProfile = () => {
         const data = response?.data;
         if (!isMounted || !data) return;
 
+        if (data.departmentProfile) setDepartmentProfile((prev) => ({ ...prev, ...data.departmentProfile }));
         if (data.profileData) setProfileData((prev) => ({ ...prev, ...data.profileData }));
-        if (Array.isArray(data.educationRecords) && data.educationRecords.length > 0) setEducationRecords(data.educationRecords);
+        if (Array.isArray(data.educationRecords) && data.educationRecords.length > 0) {
+          setEducationRecords(
+            data.educationRecords.map((record, index) => ({
+              ...record,
+              id: record.id || `record-${index}`,
+            }))
+          );
+        }
         if (Array.isArray(data.skills)) setSkills(data.skills);
         if (Array.isArray(data.projects)) setProjects(data.projects);
         if (Array.isArray(data.certifications)) setCertifications(data.certifications);
-        if (Array.isArray(data.additionalDocs) && data.additionalDocs.length > 0) setAdditionalDocs(data.additionalDocs);
+        if (Array.isArray(data.additionalDocs) && data.additionalDocs.length > 0) {
+          setAdditionalDocs(
+            data.additionalDocs.map((doc, index) => ({
+              ...doc,
+              id: doc.id || `doc-${index}`,
+            }))
+          );
+        }
+        if (typeof data.profileData?.profileImage === 'string' && data.profileData.profileImage) {
+          setProfilePhoto(data.profileData.profileImage);
+          // Load the image blob through the API endpoint
+          loadProfileImageBlob();
+        }
       } catch (error) {
-        // Keep local defaults if API load fails.
+        // Keep current state if API load fails.
       }
     };
 
@@ -224,6 +286,45 @@ const StudentProfile = () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (profilePhotoBlobUrl) {
+        window.URL.revokeObjectURL(profilePhotoBlobUrl);
+      }
+    };
+  }, [profilePhotoBlobUrl]);
+
+  // Auto-save profile data after a debounce (500ms) when skills, certifications, or profileData changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Auto-save if user made changes to skills, certifications, or profile data
+      const hasChanges = skills.length > 0 || certifications.length > 0 || profileData.profileImage;
+      
+      if (hasChanges) {
+        const autoSave = async () => {
+          try {
+            await studentAPI.updateProfile({
+              profileData,
+              skills,
+              projects,
+              certifications,
+              educationRecords,
+              additionalDocs,
+            });
+            // Silent auto-save - no message shown to avoid UI clutter
+          } catch (error) {
+            console.error('Auto-save failed:', error);
+            // Don't show error for auto-save to avoid disrupting user
+          }
+        };
+        autoSave();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [skills, certifications, profileData, projects, educationRecords, additionalDocs]);
+
   const addSkill = () => {
     const cleaned = newSkill.trim();
     if (!cleaned) {
@@ -237,11 +338,12 @@ const StudentProfile = () => {
     setSkills((prev) => [...prev, cleaned]);
     setNewSkill('');
     closeAddModal('skill');
-    setMessage('Skill added successfully.');
+    setMessage('✓ Skill added and saving...');
   };
 
   const removeSkill = (skill) => {
     setSkills((prev) => prev.filter((item) => item !== skill));
+    setMessage('✓ Skill removed');
   };
 
   const handleEducationChange = (recordId, field, value) => {
@@ -252,21 +354,59 @@ const StudentProfile = () => {
     );
   };
 
-  const handleEducationFileUpload = (recordId, event) => {
+  const handleEducationFileUpload = async (recordId, event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setEducationRecords((prev) =>
-      prev.map((record) =>
-        record.id === recordId ? { ...record, fileName: file.name } : record
-      )
-    );
-    setMessage('Marksheet updated successfully.');
+    const record = educationRecords.find((item) => item.id === recordId);
+    const recordLabel = record?.label || 'Education Record';
+
+    try {
+      const formData = new FormData();
+      formData.append('category', 'education');
+      formData.append('label', recordLabel);
+      formData.append('file', file);
+
+      const response = await studentAPI.uploadProfileDocument(formData);
+      const uploaded = response?.data || {};
+
+      setEducationRecords((prev) =>
+        prev.map((item) =>
+          item.id === recordId
+            ? {
+                ...item,
+                fileName: uploaded.fileName || file.name,
+                fileUrl: uploaded.fileUrl || item.fileUrl || '',
+              }
+            : item
+        )
+      );
+      setMessage('Marksheet uploaded successfully.');
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || 'Failed to upload marksheet.');
+    }
   };
 
-  const handleEducationDraftFileUpload = (event) => {
+  const handleEducationDraftFileUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setEducationDraft((prev) => ({ ...prev, fileName: file.name }));
+
+    try {
+      const formData = new FormData();
+      formData.append('category', 'education');
+      formData.append('label', educationDraft.label || 'Education Record');
+      formData.append('file', file);
+
+      const response = await studentAPI.uploadProfileDocument(formData);
+      const uploaded = response?.data || {};
+      setEducationDraft((prev) => ({
+        ...prev,
+        fileName: uploaded.fileName || file.name,
+        fileUrl: uploaded.fileUrl || '',
+      }));
+      setMessage('Marksheet uploaded successfully.');
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || 'Failed to upload marksheet.');
+    }
   };
 
   const addEducationRecord = () => {
@@ -291,6 +431,7 @@ const StudentProfile = () => {
         year: educationDraft.year.trim(),
         score: educationDraft.score.trim(),
         fileName: educationDraft.fileName,
+        fileUrl: educationDraft.fileUrl,
       },
     ]);
 
@@ -301,6 +442,7 @@ const StudentProfile = () => {
       year: '',
       score: '',
       fileName: '',
+      fileUrl: '',
     });
     closeAddModal('education');
     setMessage('Academic record added successfully.');
@@ -364,26 +506,67 @@ const StudentProfile = () => {
     setCertifications((prev) => [...prev, cleaned]);
     setNewCertification('');
     closeAddModal('certification');
-    setMessage('Certification added successfully.');
+    setMessage('✓ Certification added and saving...');
   };
 
   const removeCertification = (certification) => {
     setCertifications((prev) => prev.filter((item) => item !== certification));
+    setMessage('✓ Certification removed');
   };
 
-  const handleDocumentUpload = (docId, event) => {
+  const handleDocumentUpload = async (docId, event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setAdditionalDocs((prev) =>
-      prev.map((doc) => (doc.id === docId ? { ...doc, fileName: file.name } : doc))
-    );
-    setMessage('Document replaced successfully.');
+    const doc = additionalDocs.find((item) => item.id === docId);
+    const docLabel = doc?.label || 'Additional Document';
+
+    try {
+      const formData = new FormData();
+      formData.append('category', 'additional');
+      formData.append('label', docLabel);
+      formData.append('file', file);
+
+      const response = await studentAPI.uploadProfileDocument(formData);
+      const uploaded = response?.data || {};
+
+      setAdditionalDocs((prev) =>
+        prev.map((item) =>
+          item.id === docId
+            ? {
+                ...item,
+                fileName: uploaded.fileName || file.name,
+                fileUrl: uploaded.fileUrl || item.fileUrl || '',
+              }
+            : item
+        )
+      );
+      setMessage('Document replaced successfully.');
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || 'Failed to upload document.');
+    }
   };
 
-  const handleDocumentDraftFileUpload = (event) => {
+  const handleDocumentDraftFileUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setDocumentDraft((prev) => ({ ...prev, fileName: file.name }));
+
+    try {
+      const formData = new FormData();
+      formData.append('category', 'additional');
+      formData.append('label', documentDraft.label || 'Additional Document');
+      formData.append('file', file);
+
+      const response = await studentAPI.uploadProfileDocument(formData);
+      const uploaded = response?.data || {};
+      setDocumentDraft((prev) => ({
+        ...prev,
+        fileName: uploaded.fileName || file.name,
+        fileUrl: uploaded.fileUrl || '',
+      }));
+      setMessage('Document uploaded successfully.');
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || 'Failed to upload document.');
+    }
   };
 
   const addDocument = () => {
@@ -398,10 +581,11 @@ const StudentProfile = () => {
         id: `doc-${Date.now()}`,
         label: documentDraft.label.trim(),
         fileName: documentDraft.fileName.trim(),
+        fileUrl: documentDraft.fileUrl || '',
       },
     ]);
 
-    setDocumentDraft({ label: '', fileName: '' });
+    setDocumentDraft({ label: '', fileName: '', fileUrl: '' });
     closeAddModal('document');
     setMessage('Document added successfully.');
   };
@@ -416,7 +600,7 @@ const StudentProfile = () => {
           { label: 'Core Skills', value: skills.length },
           { label: 'Projects', value: projects.length },
           { label: 'Certifications', value: certifications.length },
-          { label: 'Academic Records', value: educationRecords.length },
+          { label: 'Academic Records', value: uploadedAcademicDocumentsCount },
         ]}
         tpoUpdates={[
           'Department-verified fields remain non-editable',
@@ -448,8 +632,8 @@ const StudentProfile = () => {
         <div className="identity-layout">
           <div className="avatar-wrap">
             <div className="profile-avatar">
-              {profilePhoto ? (
-                <img src={profilePhoto} alt="Profile" />
+              {profilePhotoBlobUrl ? (
+                <img src={profilePhotoBlobUrl} alt="Profile" style={{ objectFit: 'cover', objectPosition: 'center' }} />
               ) : (
                 <span>{getInitials(departmentProfile.fullName)}</span>
               )}
@@ -676,7 +860,14 @@ const StudentProfile = () => {
             <div key={record.id} className="marksheet-item">
               <div className="record-header">
                 <h4>{record.label}</h4>
-                <span className="file-chip">{record.fileName || 'No file uploaded'}</span>
+                <span className="file-chip">
+                  {record.fileName || 'No file uploaded'}
+                  {getDocumentUrl(record) && (
+                    <a onClick={() => handleViewDocument(record)} style={{ cursor: 'pointer' }} className="doc-view-link">
+                      View
+                    </a>
+                  )}
+                </span>
               </div>
               <div className="marksheet-grid">
                 <div className="form-group">
@@ -872,6 +1063,11 @@ const StudentProfile = () => {
               <div>
                 <h4>{document.label}</h4>
                 <p>{document.fileName}</p>
+                {getDocumentUrl(document) && (
+                  <a onClick={() => handleViewDocument(document)} style={{ cursor: 'pointer' }} className="doc-view-link">
+                    View Document
+                  </a>
+                )}
               </div>
               <label htmlFor={`doc-${document.id}`} className="resume-btn resume-btn--upload doc-upload-btn">
                 <MdUploadFile aria-hidden="true" /> Replace

@@ -70,9 +70,17 @@ export const studentAPI = {
   uploadResume: (formData) => api.post('/student/resume-upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+  resumeChat: (payload) => api.post('/student/resume-chat', payload),
+  uploadProfileDocument: (formData) => api.post('/student/profile/document-upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   
   // Study Materials
   getMaterials: () => api.get('/student/materials'),
+  viewMaterial: (materialId) =>
+    api.get(`/student/materials/${materialId}/file`, {
+      responseType: 'blob',
+    }),
   
   // Projects CRUD
   createProject: (projectData) => api.post('/student/projects', projectData),
@@ -132,6 +140,7 @@ export const tpoAPI = {
 // Recruiter APIs
 export const recruiterAPI = {
   getDashboard: () => api.get('/recruiter/dashboard'),
+  getDepartments: () => api.get('/recruiter/departments'),
   
   // Job Management
   postJob: (jobData) => api.post('/recruiter/jobs', jobData),
@@ -142,6 +151,11 @@ export const recruiterAPI = {
   // Applicant Management
   getApplicants: (filters) => api.get('/recruiter/applicants', { params: filters }),
   getApplicantProfile: (id) => api.get(`/recruiter/applicants/${id}`),
+  viewApplicantDocument: (applicationId, url) =>
+    api.get(`/recruiter/applications/${applicationId}/document`, {
+      params: { url },
+      responseType: 'blob',
+    }),
   updateApplicationStatus: (appId, status) =>
     api.put(`/recruiter/applications/${appId}`, { status }),
   
@@ -151,6 +165,10 @@ export const recruiterAPI = {
   getOffers: () => api.get('/recruiter/offers'),
   updateOfferStatus: (appId, status) =>
     api.put(`/recruiter/offers/${appId}`, { status }),
+  
+  // Direct API instance for custom requests (blob downloads, etc.)
+  api: api,
 };
 
 export default api;
+export { api };

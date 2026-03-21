@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import { recruiterAPI } from '../../services/api';
+import fileDownloadService from '../../services/fileDownloadService';
 import {
   formatDate,
   formatDateTime,
@@ -14,6 +15,7 @@ const RecruiterApplicants = () => {
   const [applications, setApplications] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [selectedApplicant, setSelectedApplicant] = useState(null);
+  const [viewingDocKey, setViewingDocKey] = useState('');
   const [filters, setFilters] = useState({
     search: '',
     jobId: 'all',
@@ -115,6 +117,21 @@ const RecruiterApplicants = () => {
         app.id === applicant.id ? { ...app, contactedAt: new Date().toISOString() } : app
       )
     );
+  };
+
+  const handleViewDocument = async (applicant, doc) => {
+    if (!doc?.fileUrl) return;
+
+    const docKey = `${applicant.id}-${doc.fileUrl}`;
+    try {
+      setViewingDocKey(docKey);
+      const filename = doc.fileName || doc.name || 'document';
+      await fileDownloadService.viewApplicantDocument(applicant.id, doc.fileUrl, filename);
+    } catch (error) {
+      // Keep UI stable if document retrieval fails.
+    } finally {
+      setViewingDocKey('');
+    }
   };
 
   return (
@@ -285,15 +302,33 @@ const RecruiterApplicants = () => {
             <div className="detail-block">
               <h4>Uploaded Documents</h4>
               <div className="doc-list">
-                {selectedApplicant.documents.map((doc) => (
-                  <div key={doc.name} className="doc-item">
-                    <span>{doc.name}</span>
-                    <span>{doc.fileName}</span>
-                    <span className={`badge ${doc.status === 'verified' ? 'badge-offer' : 'badge-pending'}`}>
-                      {doc.status}
-                    </span>
-                  </div>
-                ))}
+                {selectedApplicant.documents.map((doc, index) => {
+                  const docKey = `${selectedApplicant.id}-${doc.fileUrl || index}`;
+                  const isLoadingDoc = viewingDocKey === docKey;
+
+                  return (
+                    <div key={docKey} className="doc-item">
+                      <div className="doc-main">
+                        <span className="doc-type">{doc.name}</span>
+                        <span className="doc-file" title={doc.fileName || 'Document'}>{doc.fileName || 'Document'}</span>
+                      </div>
+
+                      <div className="doc-actions">
+                        <button
+                          type="button"
+                          className="btn btn-small btn-outlined"
+                          onClick={() => handleViewDocument(selectedApplicant, doc)}
+                          disabled={!doc.fileUrl || isLoadingDoc}
+                        >
+                          {isLoadingDoc ? 'Opening...' : 'View Document'}
+                        </button>
+                        <span className={`badge ${doc.status === 'verified' ? 'badge-offer' : 'badge-pending'}`}>
+                          {doc.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

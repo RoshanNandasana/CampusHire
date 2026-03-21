@@ -15,243 +15,7 @@ import './StudentApplications.css';
 
 const StudentApplications = () => {
   const [selectedApp, setSelectedApp] = useState(null);
-  const [applications, setApplications] = useState([
-    {
-      id: 1,
-      applicationId: 'APP-2024-0015',
-      jobId: 'JOB-GGL-114',
-      company: 'Google',
-      position: 'Software Engineer',
-      appliedDate: '2024-01-15',
-      status: 'shortlisted',
-      workMode: 'Hybrid',
-      employmentType: 'Full Time',
-      location: 'Bangalore',
-      ctc: '20 LPA',
-      deadline: '2024-01-18',
-      lastUpdated: '2024-01-22',
-      source: 'Campus Placement Cell',
-      eligibility: 'Eligible (CGPA 8.2 / Required 7.5)',
-      requiredSkills: ['Python', 'JavaScript', 'DSA', 'System Design'],
-      selectionProcess: ['Online Assessment', 'Technical Interview 1', 'Technical Interview 2', 'HR Interview'],
-      bondPolicy: 'Required (12 months)',
-      tpoCoordinator: 'Dr. R. Sharma',
-      recruiter: {
-        name: 'Anita Rao',
-        email: 'anita.rao@google.com',
-        phone: '+91 90000 11111',
-      },
-      documents: [
-        { name: 'Resume', submittedOn: '2024-01-15', status: 'Verified' },
-        { name: 'Academic Transcript', submittedOn: '2024-01-15', status: 'Verified' },
-        { name: 'Government ID', submittedOn: '2024-01-15', status: 'Pending Verification' },
-      ],
-      interviews: [
-        {
-          round: 'Technical Interview - 1',
-          date: '2024-02-05',
-          time: '10:30 AM',
-          mode: 'Online (Google Meet)',
-          status: 'Scheduled',
-          panel: 'SWE Hiring Team',
-        },
-      ],
-      timeline: [
-        { status: 'Applied', date: '2024-01-15', completed: true, note: 'Application submitted successfully.' },
-        { status: 'Shortlisted', date: '2024-01-22', completed: true, note: 'Profile shortlisted by recruiter.' },
-        {
-          status: 'Technical Interview',
-          date: null,
-          expectedDate: '2024-02-05',
-          completed: false,
-          note: 'Interview slot has been scheduled.',
-        },
-        {
-          status: 'HR Round',
-          date: null,
-          expectedDate: '2024-02-12',
-          completed: false,
-          note: 'Will be shared after technical round.',
-        },
-        { status: 'Offer', date: null, expectedDate: null, completed: false, note: 'Pending final decision.' },
-      ],
-      history: [
-        { label: 'Application submitted', dateTime: '2024-01-15T09:40:00' },
-        { label: 'Documents reviewed by placement cell', dateTime: '2024-01-16T11:15:00' },
-        { label: 'Shortlisted by recruiter', dateTime: '2024-01-22T16:10:00' },
-      ],
-    },
-    {
-      id: 2,
-      applicationId: 'APP-2024-0010',
-      jobId: 'JOB-MSF-067',
-      company: 'Microsoft',
-      position: 'Product Manager',
-      appliedDate: '2024-01-10',
-      status: 'interview',
-      workMode: 'Onsite',
-      employmentType: 'Full Time',
-      location: 'Hyderabad',
-      ctc: '18 LPA',
-      deadline: '2024-01-12',
-      lastUpdated: '2024-02-01',
-      source: 'Campus Placement Cell',
-      eligibility: 'Eligible (CGPA 8.2 / Required 7.0)',
-      requiredSkills: ['Product Thinking', 'Analytics', 'Communication', 'Leadership'],
-      selectionProcess: ['Case Study Round', 'Technical Discussion', 'HR Interview'],
-      bondPolicy: 'Not required',
-      tpoCoordinator: 'Prof. Neha Soni',
-      recruiter: {
-        name: 'Ritika Sharma',
-        email: 'ritika.sharma@microsoft.com',
-        phone: '+91 90000 22222',
-      },
-      documents: [
-        { name: 'Resume', submittedOn: '2024-01-10', status: 'Verified' },
-        { name: 'Academic Transcript', submittedOn: '2024-01-10', status: 'Verified' },
-        { name: 'Portfolio Link', submittedOn: '2024-01-10', status: 'Verified' },
-      ],
-      interviews: [
-        {
-          round: 'Technical Interview',
-          date: '2024-02-01',
-          time: '09:30 AM',
-          mode: 'Online (Teams)',
-          status: 'Completed',
-          panel: 'Product Engineering Team',
-        },
-        {
-          round: 'HR Round',
-          date: '2024-02-15',
-          time: '02:00 PM',
-          mode: 'Online (Teams)',
-          status: 'Scheduled',
-          panel: 'HR Business Partner',
-        },
-      ],
-      timeline: [
-        { status: 'Applied', date: '2024-01-10', completed: true, note: 'Application submitted successfully.' },
-        { status: 'Shortlisted', date: '2024-01-18', completed: true, note: 'Shortlisted for PM process.' },
-        { status: 'Technical Interview', date: '2024-02-01', completed: true, note: 'Round completed.' },
-        {
-          status: 'HR Round',
-          date: null,
-          expectedDate: '2024-02-15',
-          completed: false,
-          note: 'Interview invite shared via email.',
-        },
-        { status: 'Offer', date: null, expectedDate: null, completed: false, note: 'Awaiting final result.' },
-      ],
-      history: [
-        { label: 'Application submitted', dateTime: '2024-01-10T08:55:00' },
-        { label: 'Shortlisted for PM role', dateTime: '2024-01-18T15:20:00' },
-        { label: 'Technical interview completed', dateTime: '2024-02-01T11:05:00' },
-      ],
-    },
-    {
-      id: 3,
-      applicationId: 'APP-2024-0005',
-      jobId: 'JOB-AMZ-039',
-      company: 'Amazon',
-      position: 'Data Engineer',
-      appliedDate: '2024-01-05',
-      status: 'offer',
-      workMode: 'Hybrid',
-      employmentType: 'Full Time',
-      location: 'Bangalore',
-      ctc: '16 LPA',
-      deadline: '2024-01-08',
-      lastUpdated: '2024-02-10',
-      source: 'Campus Placement Cell',
-      eligibility: 'Eligible (CGPA 8.2 / Required 6.5)',
-      requiredSkills: ['SQL', 'Python', 'ETL', 'Data Modeling'],
-      selectionProcess: ['Coding Round', 'Technical Interview', 'HR Interview'],
-      bondPolicy: 'Required (18 months)',
-      tpoCoordinator: 'Dr. R. Sharma',
-      recruiter: {
-        name: 'Kunal Mehta',
-        email: 'kunal.mehta@amazon.com',
-        phone: '+91 90000 33333',
-      },
-      documents: [
-        { name: 'Resume', submittedOn: '2024-01-05', status: 'Verified' },
-        { name: 'Academic Transcript', submittedOn: '2024-01-05', status: 'Verified' },
-        { name: 'Internship Certificate', submittedOn: '2024-01-06', status: 'Verified' },
-      ],
-      interviews: [
-        {
-          round: 'Technical Interview - 1',
-          date: '2024-01-25',
-          time: '11:00 AM',
-          mode: 'Online',
-          status: 'Completed',
-          panel: 'Data Platform Team',
-        },
-        {
-          round: 'HR Round',
-          date: '2024-02-08',
-          time: '03:30 PM',
-          mode: 'Online',
-          status: 'Completed',
-          panel: 'Talent Acquisition',
-        },
-      ],
-      timeline: [
-        { status: 'Applied', date: '2024-01-05', completed: true, note: 'Application submitted successfully.' },
-        { status: 'Shortlisted', date: '2024-01-12', completed: true, note: 'Profile shortlisted.' },
-        { status: 'Technical Interview', date: '2024-01-25', completed: true, note: 'Technical round cleared.' },
-        { status: 'HR Round', date: '2024-02-08', completed: true, note: 'HR discussion completed.' },
-        { status: 'Offer', date: '2024-02-10', completed: true, note: 'Offer released by recruiter.' },
-      ],
-      history: [
-        { label: 'Application submitted', dateTime: '2024-01-05T10:05:00' },
-        { label: 'Shortlisted', dateTime: '2024-01-12T14:00:00' },
-        { label: 'Offer released', dateTime: '2024-02-10T12:20:00' },
-      ],
-    },
-    {
-      id: 4,
-      applicationId: 'APP-2024-0020',
-      jobId: 'JOB-TCS-204',
-      company: 'TCS',
-      position: 'Systems Engineer',
-      appliedDate: '2024-01-20',
-      status: 'applied',
-      workMode: 'Onsite',
-      employmentType: 'Full Time',
-      location: 'Pune',
-      ctc: '8 LPA',
-      deadline: '2024-01-22',
-      lastUpdated: '2024-01-20',
-      source: 'Campus Placement Cell',
-      eligibility: 'Eligible (CGPA 8.2 / Required 6.0)',
-      requiredSkills: ['Java', 'SQL', 'OOPS', 'Aptitude'],
-      selectionProcess: ['Aptitude Test', 'Technical Interview', 'HR Interview'],
-      bondPolicy: 'Required (24 months)',
-      tpoCoordinator: 'Prof. Rahul Desai',
-      recruiter: {
-        name: 'Megha Iyer',
-        email: 'megha.iyer@tcs.com',
-        phone: '+91 90000 44444',
-      },
-      documents: [
-        { name: 'Resume', submittedOn: '2024-01-20', status: 'Verified' },
-        { name: 'Academic Transcript', submittedOn: '2024-01-20', status: 'Pending Verification' },
-      ],
-      interviews: [],
-      timeline: [
-        { status: 'Applied', date: '2024-01-20', completed: true, note: 'Application submitted successfully.' },
-        { status: 'Shortlisted', date: null, expectedDate: '2024-01-28', completed: false, note: 'Awaiting recruiter shortlist.' },
-        { status: 'Technical Interview', date: null, expectedDate: null, completed: false, note: 'Will be scheduled after shortlist.' },
-        { status: 'HR Round', date: null, expectedDate: null, completed: false, note: 'Pending technical clearance.' },
-        { status: 'Offer', date: null, expectedDate: null, completed: false, note: 'Pending final result.' },
-      ],
-      history: [
-        { label: 'Application submitted', dateTime: '2024-01-20T09:20:00' },
-        { label: 'Profile under review', dateTime: '2024-01-20T17:40:00' },
-      ],
-    },
-  ]);
+  const [applications, setApplications] = useState([]);
 
   const formatDate = (value) => {
     if (!value) return 'Pending';
@@ -357,9 +121,13 @@ const StudentApplications = () => {
       status,
       workMode: 'As per company policy',
       employmentType: 'Full Time',
-      location: 'TBD',
-      ctc: offers?.[0]?.salary ? `${(Number(offers[0].salary) / 100000).toFixed(1)} LPA` : 'TBD',
-      deadline: app?.created_at,
+      location: app?.job?.location || 'TBD',
+      ctc: offers?.[0]?.salary
+        ? `${(Number(offers[0].salary) / 100000).toFixed(1)} LPA`
+        : app?.job?.salary
+          ? `${(Number(app.job.salary) / 100000).toFixed(1)} LPA`
+          : 'TBD',
+      deadline: app?.job?.application_deadline || app?.created_at,
       lastUpdated: app?.updated_at,
       source: 'Campus Placement Cell',
       eligibility: 'Eligibility verified by TPO and system rules',
@@ -510,6 +278,12 @@ const StudentApplications = () => {
             </div>
           </Card>
         ))}
+        {applications.length === 0 && (
+          <div className="empty-state">
+            <p style={{ fontSize: '18px', marginBottom: '8px' }}>No applications yet.</p>
+            <p style={{ fontSize: '14px', color: '#666' }}>Browse jobs and apply to start your placement journey!</p>
+          </div>
+        )}
       </div>
 
 

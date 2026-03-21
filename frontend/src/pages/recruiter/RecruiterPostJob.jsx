@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '../../components/common/Card';
 import { useAuth } from '../../context/AuthContext';
 import { recruiterAPI } from '../../services/api';
@@ -22,12 +22,14 @@ const emptyRound = () => ({
 const RecruiterPostJob = () => {
   const { user } = useAuth();
   const [message, setMessage] = useState('');
+  const [departments, setDepartments] = useState([]);
   const [requiredDocuments, setRequiredDocuments] = useState(DEFAULT_DOCUMENTS);
   const [rounds, setRounds] = useState([emptyRound()]);
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    departmentId: '',
     openings: 1,
     minCGPA: 6,
     skills: '',
@@ -74,6 +76,7 @@ const RecruiterPostJob = () => {
     setFormData({
       title: '',
       description: '',
+      departmentId: '',
       openings: 1,
       minCGPA: 6,
       skills: '',
@@ -94,6 +97,22 @@ const RecruiterPostJob = () => {
     setRounds([emptyRound()]);
   };
 
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const response = await recruiterAPI.getDepartments();
+        const nextDepartments = Array.isArray(response?.data?.departments)
+          ? response.data.departments
+          : [];
+        setDepartments(nextDepartments);
+      } catch (error) {
+        setDepartments([]);
+      }
+    };
+
+    loadDepartments();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -112,6 +131,7 @@ const RecruiterPostJob = () => {
       await recruiterAPI.postJob({
         title: formData.title.trim(),
         description: formData.description.trim(),
+        departmentId: formData.departmentId || undefined,
         openings: Number(formData.openings) || 1,
         minCGPA: Number(formData.minCGPA) || 0,
         skills: formData.skills
@@ -157,7 +177,7 @@ const RecruiterPostJob = () => {
               <label>Company Name</label>
               <input
                 type="text"
-                value={user?.email || 'Recruiter account'}
+                value={user?.companyName || user?.email || 'Recruiter account'}
                 className="form-input"
                 readOnly
               />
@@ -173,6 +193,27 @@ const RecruiterPostJob = () => {
                 className="form-input"
                 required
               />
+            </div>
+
+            <div className="form-group">
+              <label>Target Department (Optional)</label>
+              <select
+                className="form-input"
+                value={formData.departmentId}
+                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+              >
+                <option value="">All Departments</option>
+                {departments.map((department) => (
+                  <option
+                    key={department.id}
+                    value={department.id}
+                    disabled={department.hasActiveTpo === false}
+                  >
+                    {department.name}
+                    {department.hasActiveTpo === false ? ' (No active TPO assigned)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">

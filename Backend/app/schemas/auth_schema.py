@@ -16,6 +16,8 @@ class TokenResponse(BaseModel):
     role: str
     student_id: str | None = None
     department_id: str | None = None
+    company_id: str | None = None
+    company_name: str | None = None
 
 
 class RefreshRequest(BaseModel):

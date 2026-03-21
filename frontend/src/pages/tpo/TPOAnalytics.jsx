@@ -4,22 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { tpoAPI } from '../../services/api';
 import './TPOAnalytics.css';
 
-const COMPANY_HIRING_DATA = [];
-
-const BRANCH_STUDENT_COUNT = 120;
-
 const TPOAnalytics = () => {
   const { user } = useAuth();
-
-  const assignedBranch = useMemo(() => {
-    if (!user?.email) return 'CSE';
-    const email = user.email.toLowerCase();
-    if (email.includes('ece')) return 'ECE';
-    if (email.includes('me')) return 'ME';
-    if (email.includes('civil')) return 'Civil';
-    if (email.includes('it')) return 'IT';
-    return 'CSE';
-  }, [user]);
 
   const [filters, setFilters] = useState({
     searchCompany: '',
@@ -28,34 +14,83 @@ const TPOAnalytics = () => {
     sortBy: 'hired',
   });
 
-  const [analyticsData, setAnalyticsData] = useState(COMPANY_HIRING_DATA);
-  const [branchStudentCount, setBranchStudentCount] = useState(BRANCH_STUDENT_COUNT);
+  const [analyticsData, setAnalyticsData] = useState([]);
+  const [branchStudentCount, setBranchStudentCount] = useState(0);
+  const [averageCtcLpa, setAverageCtcLpa] = useState(0);
+  const [assignedBranch, setAssignedBranch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const toLpa = (value) => {
+    const numeric = Number(value || 0);
+    if (!numeric) return 0;
+    return numeric > 1000 ? numeric / 100000 : numeric;
+  };
 
   useEffect(() => {
     let isMounted = true;
 
     const loadAnalytics = async () => {
       try {
-        const response = await tpoAPI.getAnalytics();
-        const data = response?.data || {};
+        setIsLoading(true);
+        const [analyticsResponse, jobsResponse] = await Promise.all([
+          tpoAPI.getAnalytics(),
+          tpoAPI.getJobs(),
+        ]);
+
+        const data = analyticsResponse?.data || {};
+        const jobs = Array.isArray(jobsResponse?.data?.jobs) ? jobsResponse.data.jobs : [];
         if (!isMounted) return;
+
+        const jobStatsByCompany = jobs.reduce((acc, job) => {
+          const companyId = String(job?.company?.id || '');
+          if (!companyId) return acc;
+
+          const current = acc[companyId] || {
+            salaryTotal: 0,
+            salaryCount: 0,
+            latestDriveDate: null,
+          };
+
+          const salary = Number(job?.salary || 0);
+          if (salary > 0) {
+            current.salaryTotal += salary;
+            current.salaryCount += 1;
+          }
+
+          const driveDate = job?.application_deadline || null;
+          if (driveDate && (!current.latestDriveDate || new Date(driveDate) > new Date(current.latestDriveDate))) {
+            current.latestDriveDate = driveDate;
+          }
+
+          acc[companyId] = current;
+          return acc;
+        }, {});
 
         const companyBreakdown = Array.isArray(data.company_breakdown)
           ? data.company_breakdown
           : [];
         setAnalyticsData(
           companyBreakdown.map((item) => ({
+            companyId: String(item.company_id || ''),
             company: item.company_name || 'Company',
             offers: Number(item.offers_made || 0),
             hired: Number(item.offers_accepted || 0),
-            avgCtc: 0,
-            driveDate: new Date().toISOString().slice(0, 10),
+            avgCtc:
+              jobStatsByCompany[String(item.company_id || '')]?.salaryCount > 0
+                ? jobStatsByCompany[String(item.company_id || '')].salaryTotal /
+                  jobStatsByCompany[String(item.company_id || '')].salaryCount
+                : null,
+            driveDate: jobStatsByCompany[String(item.company_id || '')]?.latestDriveDate || null,
           }))
         );
 
-        setBranchStudentCount(Number(data.placement_stats?.total_students || BRANCH_STUDENT_COUNT));
+        setAssignedBranch(data.department_name || user?.department || 'N/A');
+        setBranchStudentCount(Number(data.placement_stats?.total_students || 0));
+        setAverageCtcLpa(toLpa(data.placement_stats?.avg_ctc));
       } catch (error) {
         if (!isMounted) return;
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -63,7 +98,7 @@ const TPOAnalytics = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.department]);
 
   const filteredRows = useMemo(() => {
     const base = analyticsData.filter((item) => {
@@ -76,8 +111,12 @@ const TPOAnalytics = () => {
 
     return base.sort((a, b) => {
       if (filters.sortBy === 'offers') return b.offers - a.offers;
-      if (filters.sortBy === 'conversion') return b.hired / b.offers - a.hired / a.offers;
-      if (filters.sortBy === 'ctc') return b.avgCtc - a.avgCtc;
+      if (filters.sortBy === 'conversion') {
+        const conversionA = a.offers ? a.hired / a.offers : 0;
+        const conversionB = b.offers ? b.hired / b.offers : 0;
+        return conversionB - conversionA;
+      }
+      if (filters.sortBy === 'ctc') return (b.avgCtc || 0) - (a.avgCtc || 0);
       return b.hired - a.hired;
     });
   }, [analyticsData, filters]);
@@ -85,9 +124,10 @@ const TPOAnalytics = () => {
   const summary = useMemo(() => {
     const totalOffers = filteredRows.reduce((sum, row) => sum + row.offers, 0);
     const totalHired = filteredRows.reduce((sum, row) => sum + row.hired, 0);
-    const avgCtc = filteredRows.length
-      ? (filteredRows.reduce((sum, row) => sum + row.avgCtc, 0) / filteredRows.length).toFixed(1)
-      : '0.0';
+    const rowsWithCtc = filteredRows.filter((row) => Number(row.avgCtc) > 0);
+    const avgCtcFromRows = rowsWithCtc.length
+      ? (rowsWithCtc.reduce((sum, row) => sum + Number(row.avgCtc || 0), 0) / rowsWithCtc.length).toFixed(1)
+      : null;
 
     const conversionRate = totalOffers ? ((totalHired / totalOffers) * 100).toFixed(1) : '0.0';
     const placementRate = branchStudentCount ? ((totalHired / branchStudentCount) * 100).toFixed(1) : '0.0';
@@ -95,12 +135,12 @@ const TPOAnalytics = () => {
     return {
       totalOffers,
       totalHired,
-      avgCtc,
+      avgCtc: avgCtcFromRows || averageCtcLpa.toFixed(1),
       conversionRate,
       placementRate,
       companies: filteredRows.length,
     };
-  }, [branchStudentCount, filteredRows]);
+  }, [averageCtcLpa, branchStudentCount, filteredRows]);
 
   return (
     <div className="tpo-analytics-simple">
@@ -217,6 +257,8 @@ const TPOAnalytics = () => {
               ) : (
                 filteredRows.map((row) => {
                   const conversion = row.offers ? ((row.hired / row.offers) * 100).toFixed(1) : '0.0';
+                  const rowCtc = Number(row.avgCtc) > 0 ? toLpa(row.avgCtc).toFixed(1) : 'N/A';
+                  const driveDate = row.driveDate ? new Date(row.driveDate).toLocaleDateString() : 'N/A';
                   return (
                     <tr key={row.company}>
                       <td>
@@ -229,8 +271,8 @@ const TPOAnalytics = () => {
                           {conversion}%
                         </span>
                       </td>
-                      <td>{row.avgCtc} LPA</td>
-                      <td>{new Date(row.driveDate).toLocaleDateString()}</td>
+                      <td>{rowCtc === 'N/A' ? rowCtc : `${rowCtc} LPA`}</td>
+                      <td>{driveDate}</td>
                     </tr>
                   );
                 })
@@ -238,6 +280,7 @@ const TPOAnalytics = () => {
             </tbody>
           </table>
         </div>
+        {isLoading && <p className="loading-state">Loading analytics...</p>}
       </Card>
     </div>
   );

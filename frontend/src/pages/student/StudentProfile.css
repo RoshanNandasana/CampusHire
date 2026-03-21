@@ -257,6 +257,18 @@
   width: fit-content;
 }
 
+.student-profile .doc-view-link {
+  display: inline-flex;
+  margin-left: 0.55rem;
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.student-profile .doc-view-link:hover {
+  text-decoration: underline;
+}
+
 .info-grid-identity {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }

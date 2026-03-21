@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+import uuid
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RecruiterPostJobRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     title: str
     description: str
+    department_id: uuid.UUID | None = Field(default=None, alias="departmentId")
     openings: int = Field(ge=1)
     minCGPA: float = Field(ge=0, le=10)
     skills: list[str] = Field(default_factory=list)

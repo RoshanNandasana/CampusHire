@@ -14,7 +14,11 @@ cat << 'EOF'
   Option 1: Quick Start (Recommended)
   ──────────────────────────────────
   $ cd /workspaces/CampusHire
-  $ docker-compose up --build
+  $ docker-compose -f docker-compose.yml up --build
+
+  Note:
+  - Use only the root compose file: /workspaces/CampusHire/docker-compose.yml
+  - Do not use Backend/compose.yml (deprecated and removed)
   
   Then visit:
   - Frontend: http://localhost:3000
@@ -41,10 +45,10 @@ cat << 'EOF'
 
   Stop/Start Services
   ───────────────────
-  $ docker-compose down              # Stop all services
-  $ docker-compose up                # Start all services
-  $ docker-compose up -d             # Start in background
-  $ docker-compose restart backend   # Restart backend only
+  $ docker-compose -f docker-compose.yml down              # Stop all services
+  $ docker-compose -f docker-compose.yml up                # Start all services
+  $ docker-compose -f docker-compose.yml up -d             # Start in background
+  $ docker-compose -f docker-compose.yml restart backend   # Restart backend only
 
   Database Access
   ────────────────

@@ -15,6 +15,7 @@ const DEFAULT_JOBS = [
     minCGPA: 7.5,
     skills: ['Python', 'JavaScript', 'DSA'],
     ctc: '20 LPA',
+    eligible: true,
     locations: ['Bangalore', 'Hyderabad'],
     deadline: '2026-04-20',
     bondAgreement: {
@@ -39,6 +40,7 @@ const DEFAULT_JOBS = [
     minCGPA: 7.0,
     skills: ['Analytics', 'Communication', 'Leadership'],
     ctc: '18 LPA',
+    eligible: true,
     locations: ['Pune'],
     deadline: '2026-04-18',
     bondAgreement: {
@@ -62,6 +64,7 @@ const DEFAULT_JOBS = [
     minCGPA: 6.5,
     skills: ['SQL', 'Python', 'Spark'],
     ctc: '16 LPA',
+    eligible: true,
     locations: ['Bangalore'],
     deadline: '2026-04-24',
     bondAgreement: {
@@ -86,6 +89,7 @@ const DEFAULT_JOBS = [
     minCGPA: 6.0,
     skills: ['Java', 'SQL', 'OOPS'],
     ctc: '8 LPA',
+    eligible: true,
     locations: ['Multiple'],
     deadline: '2026-04-14',
     bondAgreement: {
@@ -115,9 +119,8 @@ const StudentJobListings = () => {
     minCtc: 0,
   });
 
-  const [jobs, setJobs] = useState(() => {
-  const [jobs, setJobs] = useState([]);
-  });
+  const [jobs, setJobs] = useState(DEFAULT_JOBS);
+  const [appliedJobIds, setAppliedJobIds] = useState(new Set());
 
   const [studentCgpa, setStudentCgpa] = useState(8.2);
 
@@ -169,8 +172,6 @@ const StudentJobListings = () => {
   );
 
   const filteredJobs = jobs.filter((job) => {
-    const userCgpa = Number(studentCgpa || 0);
-    const eligibleCgpa = userCgpa >= job.minCGPA;
     const matchesSearch =
       job.company.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
       job.position.toLowerCase().includes(filters.searchQuery.toLowerCase());
@@ -180,17 +181,23 @@ const StudentJobListings = () => {
     const matchesSkill = filters.skill === 'all' || job.skills.includes(filters.skill);
     const matchesCtc = parseLpa(job.ctc) >= Number(filters.minCtc);
 
-    return eligibleCgpa && matchesSearch && matchesCompany && matchesLocation && matchesSkill && matchesCtc;
+    return matchesSearch && matchesCompany && matchesLocation && matchesSkill && matchesCtc;
   });
 
-  const isEligible = (job) => Number(studentCgpa || 0) >= Number(job.minCGPA || 0);
+  const isEligible = (job) => {
+    if (typeof job?.eligible === 'boolean') return job.eligible;
+    return Number(studentCgpa || 0) >= Number(job.minCGPA || 0);
+  };
 
   useEffect(() => {
     let isMounted = true;
-    const loadJobs = async () => {
+    const loadData = async () => {
       try {
-        const response = await studentAPI.getJobListings();
-        const data = response?.data;
+        const [jobsResponse, appsResponse] = await Promise.all([
+          studentAPI.getJobListings(),
+          studentAPI.getApplications(),
+        ]);
+        const data = jobsResponse?.data;
         if (!isMounted || !data) return;
 
         if (Array.isArray(data.jobs) && data.jobs.length > 0) {
@@ -213,12 +220,23 @@ const StudentJobListings = () => {
         if (typeof data.studentCgpa === 'number') {
           setStudentCgpa(data.studentCgpa);
         }
+
+        const apps = appsResponse?.data?.applications;
+        if (Array.isArray(apps)) {
+          const nextAppliedIds = new Set(
+            apps
+              .map((item) => item?.job?.id)
+              .filter(Boolean)
+              .map((id) => String(id))
+          );
+          setAppliedJobIds(nextAppliedIds);
+        }
       } catch (error) {
         // Keep fallback jobs if API is temporarily unavailable.
       }
     };
 
-    loadJobs();
+    loadData();
     return () => {
       isMounted = false;
     };
@@ -254,13 +272,18 @@ const StudentJobListings = () => {
 
     try {
       await studentAPI.applyForJob(selectedJob.id);
+      setAppliedJobIds((prev) => new Set([...prev, String(selectedJob.id)]));
       setApplicationMessage('Application submitted successfully with verified profile documents.');
       setTimeout(() => {
         setSelectedJob(null);
         setApplicationMessage('');
       }, 800);
     } catch (error) {
-      setApplicationMessage(error?.response?.data?.detail || 'Unable to submit application. Please try again.');
+      const detail = error?.response?.data?.detail || 'Unable to submit application. Please try again.';
+      if (String(detail).toLowerCase().includes('already applied')) {
+        setAppliedJobIds((prev) => new Set([...prev, String(selectedJob.id)]));
+      }
+      setApplicationMessage(detail);
     }
   };
 
@@ -289,7 +312,7 @@ const StudentJobListings = () => {
         subtitle="Filter quickly, verify profile documents, and apply with prefilled data in one flow."
         kicker="Student Jobs"
         stats={[
-          { label: 'Eligible Jobs', value: filteredJobs.length },
+          { label: 'Available Jobs', value: filteredJobs.length },
           { label: 'Profile CGPA', value: String(studentCgpa) },
           { label: 'Current Cycle', value: '2026' },
           { label: 'Filters Applied', value: Object.values(filters).some((value) => value && value !== 'all' && value !== 0) ? 'Yes' : 'No' },
@@ -378,12 +401,15 @@ const StudentJobListings = () => {
       </Card>
 
       <div className="jobs-count">
-        <p>{filteredJobs.length} eligible job(s) found</p>
+        <p>{filteredJobs.length} job(s) found</p>
       </div>
 
       <div className="jobs-grid">
         {filteredJobs.map((job) => (
           <Card key={job.id} className="job-card card-interactive">
+            {appliedJobIds.has(String(job.id)) && (
+              <div className="status-badge status-applied">Applied</div>
+            )}
             <div className="job-header">
               <div className="job-title-section">
                 <h3>{job.position}</h3>
@@ -423,9 +449,9 @@ const StudentJobListings = () => {
             <button
               className="btn btn-primary btn-small btn-full"
               onClick={() => handleOpenApply(job)}
-              disabled={!isEligible(job)}
+              disabled={!isEligible(job) || appliedJobIds.has(String(job.id))}
             >
-              View & Apply
+              {appliedJobIds.has(String(job.id)) ? 'Applied' : 'View & Apply'}
             </button>
           </Card>
         ))}
@@ -476,7 +502,7 @@ const StudentJobListings = () => {
                 <div className="criteria-grid">
                   <div className="criteria-card">
                     <span>Required CGPA</span>
-                    <strong>{selectedJob.minCGPA}</strong>
+                      <strong>{selectedJob.minCGPA ?? 'Department specific'}</strong>
                   </div>
                   <div className="criteria-card">
                     <span>Your CGPA</span>
@@ -484,7 +510,7 @@ const StudentJobListings = () => {
                   </div>
                   <div className="criteria-card">
                     <span>Eligibility</span>
-                    <strong>{Number(applyDraft.cgpa) >= selectedJob.minCGPA ? 'Eligible' : 'Not Eligible'}</strong>
+                      <strong>{isEligible(selectedJob) ? 'Eligible' : 'Not Eligible'}</strong>
                   </div>
                 </div>
 

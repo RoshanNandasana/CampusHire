@@ -69,3 +69,14 @@ def get_presigned_get_url(bucket_name: str, object_name: str, expires_hours: int
 		object_name,
 		expires=timedelta(hours=expires_hours),
 	)
+
+
+def get_object_bytes(bucket_name: str, object_name: str) -> tuple[bytes, str]:
+	response = _client.get_object(bucket_name, object_name)
+	try:
+		data = response.read()
+		content_type = response.headers.get("Content-Type", "application/octet-stream")
+		return data, content_type
+	finally:
+		response.close()
+		response.release_conn()

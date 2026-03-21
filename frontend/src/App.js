@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 // Layouts
@@ -27,6 +27,7 @@ import TPOJobs from './pages/tpo/TPOJobs';
 import TPOApplications from './pages/tpo/TPOApplications';
 import TPOAnalytics from './pages/tpo/TPOAnalytics';
 import TPOMaterials from './pages/tpo/TPOMaterials';
+import TPOStudentRegistration from './pages/tpo/TPOStudentRegistration';
 
 // Recruiter Pages
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
@@ -39,20 +40,20 @@ import RecruiterOffers from './pages/recruiter/RecruiterOffers';
 import './App.css';
 import './styles/global.css';
 
-function App() {
+function AppShell() {
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
 
-  const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   const hasSidebar = isAuthenticated && !isAuthPage;
 
   return (
-    <Router>
-      <div className={`app ${isAuthPage ? 'auth-layout' : ''} ${hasSidebar ? 'has-sidebar' : ''}`}>
-        {!isAuthPage && <Navbar />}
-        <div className={`app-container ${isAuthPage ? 'auth-app-container' : ''}`}>
-          {hasSidebar && <Sidebar />}
-          <main className={`main-content ${isAuthPage ? 'auth-main-content' : ''}`}>
-            <Routes>
+    <div className={`app ${isAuthPage ? 'auth-layout' : ''} ${hasSidebar ? 'has-sidebar' : ''}`}>
+      {!isAuthPage && <Navbar />}
+      <div className={`app-container ${isAuthPage ? 'auth-app-container' : ''}`}>
+        {hasSidebar && <Sidebar />}
+        <main className={`main-content ${isAuthPage ? 'auth-main-content' : ''}`}>
+          <Routes>
               {/* Auth Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -70,6 +71,7 @@ function App() {
               <Route path="/tpo/students" element={<ProtectedRoute requiredRole="tpo"><TPOStudents /></ProtectedRoute>} />
               <Route path="/tpo/jobs" element={<ProtectedRoute requiredRole="tpo"><TPOJobs /></ProtectedRoute>} />
               <Route path="/tpo/materials" element={<ProtectedRoute requiredRole="tpo"><TPOMaterials /></ProtectedRoute>} />
+              <Route path="/tpo/student-registration" element={<ProtectedRoute requiredRole="tpo"><TPOStudentRegistration /></ProtectedRoute>} />
               <Route path="/tpo/applications" element={<ProtectedRoute requiredRole="tpo"><TPOApplications /></ProtectedRoute>} />
               <Route path="/tpo/analytics" element={<ProtectedRoute requiredRole="tpo"><TPOAnalytics /></ProtectedRoute>} />
 
@@ -83,11 +85,18 @@ function App() {
               {/* Redirect to login by default */}
               <Route path="/" element={isAuthenticated ? <Navigate to={`/${user?.role}/dashboard`} replace /> : <Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to={isAuthenticated ? `/${user?.role}/dashboard` : '/login'} replace />} />
-            </Routes>
-          </main>
-        </div>
-        {!isAuthPage && <Footer />}
+          </Routes>
+        </main>
       </div>
+      {!isAuthPage && <Footer />}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppShell />
     </Router>
   );
 }

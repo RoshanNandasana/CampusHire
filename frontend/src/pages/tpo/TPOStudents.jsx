@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
-import { useAuth } from '../../context/AuthContext';
+import { tpoAPI } from '../../services/api';
 import './TPOStudents.css';
 
 const STATUS_ORDER = {
@@ -13,82 +13,8 @@ const STATUS_ORDER = {
 };
 
 const TPOStudents = () => {
-  const { user } = useAuth();
-
-  const assignedBranch = useMemo(() => {
-    if (!user?.email) return 'CSE';
-    const email = user.email.toLowerCase();
-    if (email.includes('ece')) return 'ECE';
-    if (email.includes('me')) return 'ME';
-    if (email.includes('civil')) return 'Civil';
-    if (email.includes('it')) return 'IT';
-    return 'CSE';
-  }, [user]);
-
-  const [students] = useState([
-    {
-      id: 1,
-      name: 'Raj Kumar',
-      email: 'raj@example.com',
-      phone: '+91 98765 00001',
-      branch: 'CSE',
-      cgpa: 8.5,
-      applications: [
-        { company: 'Google', role: 'Software Engineer', status: 'shortlisted', appliedOn: '2026-03-02' },
-        { company: 'Amazon', role: 'Data Engineer', status: 'interview', appliedOn: '2026-03-08' },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Priya Singh',
-      email: 'priya@example.com',
-      phone: '+91 98765 00002',
-      branch: 'CSE',
-      cgpa: 8.2,
-      applications: [
-        { company: 'Microsoft', role: 'Product Manager', status: 'offer', appliedOn: '2026-03-04' },
-      ],
-    },
-    {
-      id: 3,
-      name: 'Amit Patel',
-      email: 'amit@example.com',
-      phone: '+91 98765 00003',
-      branch: 'ECE',
-      cgpa: 7.8,
-      applications: [{ company: 'TCS', role: 'Systems Engineer', status: 'applied', appliedOn: '2026-03-06' }],
-    },
-    {
-      id: 4,
-      name: 'Neha Verma',
-      email: 'neha@example.com',
-      phone: '+91 98765 00004',
-      branch: 'CSE',
-      cgpa: 8.9,
-      applications: [
-        { company: 'Google', role: 'Software Engineer', status: 'offer', appliedOn: '2026-03-01' },
-        { company: 'Deloitte', role: 'Business Analyst', status: 'shortlisted', appliedOn: '2026-03-10' },
-      ],
-    },
-    {
-      id: 5,
-      name: 'Sonal Shah',
-      email: 'sonal@example.com',
-      phone: '+91 98765 00006',
-      branch: 'CSE',
-      cgpa: 7.4,
-      applications: [{ company: 'Infosys', role: 'Software Developer', status: 'interview', appliedOn: '2026-03-09' }],
-    },
-    {
-      id: 6,
-      name: 'Vikram Singh',
-      email: 'vikram@example.com',
-      phone: '+91 98765 00005',
-      branch: 'ME',
-      cgpa: 7.2,
-      applications: [],
-    },
-  ]);
+  const [applicationRows, setApplicationRows] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -104,26 +30,56 @@ const TPOStudents = () => {
   const [contactMessage, setContactMessage] = useState('');
   const [uiMessage, setUiMessage] = useState('');
 
-  const branchStudents = useMemo(
-    () => students.filter((student) => student.branch === assignedBranch),
-    [students, assignedBranch]
-  );
+  useEffect(() => {
+    let isMounted = true;
 
-  const applicationRows = useMemo(() => {
-    return branchStudents.flatMap((student) =>
-      student.applications.map((application) => ({
-        rowId: `${student.id}-${application.company}-${application.role}`,
-        studentId: student.id,
-        studentName: student.name,
-        email: student.email,
-        phone: student.phone,
-        cgpa: student.cgpa,
-        branch: student.branch,
-        totalApplications: student.applications.length,
-        ...application,
-      }))
-    );
-  }, [branchStudents]);
+    const loadApplications = async () => {
+      setLoading(true);
+      try {
+        const response = await tpoAPI.getApplications();
+        const items = Array.isArray(response?.data?.applications) ? response.data.applications : [];
+        if (!isMounted) return;
+
+        const countsByStudent = items.reduce((acc, item) => {
+          const key = String(item?.email || item?.student || item?.id || 'unknown');
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {});
+
+        const mapped = items.map((item, index) => {
+          const studentName = item?.student || (item?.email ? item.email.split('@')[0] : 'Student');
+          const studentKey = String(item?.email || studentName || item?.id || index);
+          return {
+            rowId: String(item?.id || `${studentKey}-${item?.company || 'company'}-${item?.position || 'role'}-${index}`),
+            studentId: studentKey,
+            studentName,
+            email: item?.email || '-',
+            phone: item?.phone || '-',
+            cgpa: Number(item?.cgpa || 0),
+            branch: item?.branch || 'Department',
+            totalApplications: countsByStudent[studentKey] || 1,
+            company: item?.company || 'Company',
+            role: item?.position || 'Role',
+            status: String(item?.status || 'applied').toLowerCase(),
+            appliedOn: item?.appliedAt || item?.updatedAt || '',
+          };
+        });
+
+        setApplicationRows(mapped);
+      } catch (error) {
+        if (!isMounted) return;
+        setApplicationRows([]);
+        setUiMessage('Unable to load student applications right now.');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadApplications();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const companyOptions = useMemo(
     () => [...new Set(applicationRows.map((row) => row.company))],
@@ -205,7 +161,7 @@ const TPOStudents = () => {
       <div className="header">
         <h1>Branch Application Tracker</h1>
         <p>
-          Showing <strong>{assignedBranch}</strong> students and exactly which company they applied to.
+          Live department applications from backend with company-wise status tracking.
         </p>
       </div>
 
@@ -352,7 +308,9 @@ const TPOStudents = () => {
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="no-results">No applied records found for current filters.</td>
+                  <td colSpan={8} className="no-results">
+                    {loading ? 'Loading applied records...' : 'No applied records found for current filters.'}
+                  </td>
                 </tr>
               ) : (
                 filteredRows.map((row) => (
@@ -371,7 +329,7 @@ const TPOStudents = () => {
                         {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
                       </span>
                     </td>
-                    <td>{new Date(row.appliedOn).toLocaleDateString()}</td>
+                    <td>{row.appliedOn ? new Date(row.appliedOn).toLocaleDateString() : '-'}</td>
                     <td>{row.totalApplications}</td>
                     <td>
                       <button className="btn btn-small btn-primary" onClick={() => setContactTarget(row)}>

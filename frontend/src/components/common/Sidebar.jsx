@@ -30,6 +30,7 @@ const Sidebar = () => {
       return [
         { label: 'Dashboard', path: '/tpo/dashboard', icon: MdDashboard },
         { label: 'Students', path: '/tpo/students', icon: MdPeople },
+        { label: 'Register Students', path: '/tpo/student-registration', icon: MdAdd },
         { label: 'Jobs', path: '/tpo/jobs', icon: MdWork },
         { label: 'Materials', path: '/tpo/materials', icon: MdMenuBook },
         { label: 'Applications', path: '/tpo/applications', icon: MdAssignment },
