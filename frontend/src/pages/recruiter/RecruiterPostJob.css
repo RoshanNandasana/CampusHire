@@ -6,14 +6,47 @@
 
 .header {
   margin-bottom: 1.75rem;
+  border: 1px solid rgba(157, 182, 225, 0.45);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(83, 140, 224, 0.2), transparent 36%),
+    radial-gradient(circle at 88% 86%, rgba(148, 118, 236, 0.18), transparent 34%),
+    linear-gradient(130deg, #f6faff 0%, #edf4ff 52%, #f9fcff 100%);
+  box-shadow: 0 12px 24px rgba(32, 62, 116, 0.09);
+  padding: 1rem 1.1rem;
 }
 
 .header h1 {
   margin-bottom: 0.5rem;
+  color: #132f61;
 }
 
 .header p {
-  color: var(--text-light);
+  color: #526b95;
+}
+
+.recruiter-post-job > .card {
+  border: 1px solid rgba(166, 188, 226, 0.5) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 92% -20%, rgba(131, 161, 232, 0.14), transparent 45%),
+    linear-gradient(145deg, rgba(247, 251, 255, 0.96), rgba(253, 255, 255, 1)) !important;
+  box-shadow: 0 10px 24px rgba(24, 51, 95, 0.08) !important;
+}
+
+.recruiter-post-job > .card .card-header {
+  padding: 0.95rem 1.1rem !important;
+  border-bottom: 1px solid rgba(173, 194, 227, 0.45) !important;
+  background: linear-gradient(135deg, rgba(76, 125, 220, 0.17), rgba(84, 198, 163, 0.08)) !important;
+}
+
+.recruiter-post-job > .card .card-title {
+  color: #153d74 !important;
+}
+
+.recruiter-post-job > .card .card-content {
+  padding: 0.95rem 1rem !important;
 }
 
 .form-message {
@@ -106,10 +139,10 @@ textarea.form-input:focus {
 }
 
 .round-card {
-  border: 1px solid rgba(173, 193, 225, 0.6);
+  border: 1px solid rgba(150, 180, 226, 0.6);
   border-radius: 12px;
   padding: 0.8rem;
-  background: #f8fbff;
+  background: linear-gradient(145deg, rgba(241, 247, 255, 0.95), rgba(248, 252, 255, 0.98));
   display: flex;
   flex-direction: column;
   gap: 0.6rem;

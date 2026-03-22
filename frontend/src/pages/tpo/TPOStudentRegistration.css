@@ -4,13 +4,26 @@
   gap: 1rem;
 }
 
+.registration-header {
+  border: 1px solid rgba(159, 181, 224, 0.46);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(114, 170, 242, 0.22), transparent 36%),
+    radial-gradient(circle at 86% 86%, rgba(154, 130, 238, 0.2), transparent 38%),
+    linear-gradient(135deg, #f6f9ff 0%, #edf4ff 52%, #f9fcff 100%);
+  box-shadow: 0 14px 30px rgba(24, 54, 109, 0.1);
+  padding: 1.05rem 1.15rem;
+}
+
 .registration-header h1 {
   margin: 0;
+  color: #112f63;
+  font-size: clamp(1.6rem, 2.5vw, 2.25rem);
 }
 
 .registration-header p {
   margin: 0.35rem 0 0;
-  color: var(--text-light);
+  color: #52709c;
 }
 
 .registration-message {
@@ -28,6 +41,42 @@
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+.mode-card,
+.registration-card {
+  border: 1px solid rgba(168, 189, 225, 0.5) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 88% -10%, rgba(120, 152, 229, 0.14), transparent 42%),
+    linear-gradient(140deg, rgba(247, 251, 255, 0.96), rgba(252, 254, 255, 1)) !important;
+  box-shadow: 0 10px 24px rgba(23, 49, 95, 0.08) !important;
+}
+
+.mode-card .card-header,
+.registration-card .card-header {
+  padding: 0.95rem 1.1rem !important;
+  border-bottom: 1px solid rgba(171, 190, 222, 0.45) !important;
+}
+
+.mode-card .card-title,
+.registration-card .card-title {
+  color: #143c73 !important;
+  font-size: 1.02rem !important;
+}
+
+.mode-card .card-content,
+.registration-card .card-content {
+  padding: 1rem 1.1rem !important;
+}
+
+.mode-card .card-header {
+  background: linear-gradient(135deg, rgba(103, 133, 214, 0.18), rgba(88, 109, 192, 0.08)) !important;
+}
+
+.registration-card .card-header {
+  background: linear-gradient(135deg, rgba(74, 124, 217, 0.16), rgba(55, 170, 127, 0.08)) !important;
 }
 
 .registration-card {
@@ -61,8 +110,8 @@
 
 .result-box {
   margin-top: 0.85rem;
-  border: 1px solid rgba(166, 188, 224, 0.5);
-  background: rgba(246, 250, 255, 0.95);
+  border: 1px solid rgba(112, 149, 218, 0.4);
+  background: linear-gradient(140deg, rgba(236, 244, 255, 0.9), rgba(245, 255, 250, 0.88));
   border-radius: 10px;
   padding: 0.75rem 0.85rem;
 }
@@ -82,6 +131,9 @@
 
 .students-table-wrap {
   overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(175, 195, 227, 0.44);
+  background: linear-gradient(180deg, rgba(250, 253, 255, 0.96), rgba(245, 250, 255, 0.95));
 }
 
 .students-table {
@@ -92,9 +144,9 @@
 .students-table th {
   text-align: left;
   padding: 0.75rem;
-  background: #f1f4f9;
-  border-bottom: 2px solid rgba(162, 186, 224, 0.6);
-  color: #2f4677;
+  background: linear-gradient(135deg, #ebf2ff, #f1f7ff);
+  border-bottom: 2px solid rgba(145, 177, 228, 0.58);
+  color: #29477c;
   font-size: 0.82rem;
 }
 
@@ -103,6 +155,10 @@
   border-bottom: 1px solid rgba(171, 193, 227, 0.45);
   color: #3a5383;
   font-size: 0.83rem;
+}
+
+.students-table tbody tr:hover {
+  background: rgba(88, 126, 209, 0.08);
 }
 
 .empty-students {

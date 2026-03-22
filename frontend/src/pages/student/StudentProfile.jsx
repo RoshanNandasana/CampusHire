@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   MdAdd,
+  MdCheckCircle,
   MdDeleteOutline,
   MdEdit,
   MdPerson,
@@ -637,11 +638,16 @@ const StudentProfile = () => {
               ) : (
                 <span>{getInitials(departmentProfile.fullName)}</span>
               )}
+              <label htmlFor="profile-photo-input" className="avatar-upload-btn" title="Upload photo">
+                <MdUploadFile aria-hidden="true" />
+              </label>
             </div>
-            <label htmlFor="profile-photo-input" className="resume-btn resume-btn--upload">
-              <MdUploadFile aria-hidden="true" />
-              Upload Photo
-            </label>
+            {profilePhotoBlobUrl && (
+              <span className="avatar-uploaded-pill">
+                <MdCheckCircle aria-hidden="true" />
+                Uploaded
+              </span>
+            )}
             <input
               id="profile-photo-input"
               className="resume-file-input"

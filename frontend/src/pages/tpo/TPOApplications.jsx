@@ -187,7 +187,7 @@ const TPOApplications = () => {
   return (
     <div className="tpo-applications">
       <div className="applications-header">
-        <h1>Application Tracking 📋</h1>
+        <h1>Application Tracking</h1>
         <p>Monitor all student applications and statuses</p>
       </div>
 
