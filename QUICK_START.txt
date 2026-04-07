@@ -1,182 +1,35 @@
-"""
-CAMPUSHIRE - 30 SECOND QUICK START
+CampusHire Quick Start
 
-Your Complete Backend Implementation is Ready!
-"""
+1) Install dependencies
 
-# ===================================================================
-# STEP 1: START (Copy & Paste This)
-# ===================================================================
+Linux/macOS:
+  ./setup.sh
 
-cd /workspaces/CampusHire
-docker-compose up --build
+Windows:
+  setup.bat
 
-# Wait 2-3 minutes for services to start
-# Check: docker-compose ps
-# All should show "Up" ✅
+2) Start infrastructure
 
-# ===================================================================
-# STEP 2: OPEN BROWSER
-# ===================================================================
+  docker compose up -d postgres minio
 
-Frontend:           http://localhost:3000
-API Docs:           http://localhost:8000/docs
-MinIO Console:      http://localhost:9001
+3) Start backend
 
-# ===================================================================
-# STEP 3: LOGIN
-# ===================================================================
+  cd Backend
+  source venv/bin/activate      (Windows: venv\Scripts\activate.bat)
+  python seed.py
+  python main.py
 
-Email:              student@example.com
-Password:           Student@123
+4) Start frontend (new terminal)
 
-# ===================================================================
-# STEP 4: TEST IT
-# ===================================================================
+  cd frontend
+  npm start
 
-1. Go to Your Profile
-2. Click "Add Project"
-3. Fill form & Save
-4. REFRESH PAGE
-5. Project Still There! ✅ (it's in the database!)
+5) Open
 
-# ===================================================================
-# STEP 5: EXPLORE API (Optional)
-# ===================================================================
+  App:  http://localhost:3000
+  API:  http://localhost:8000/docs
 
-Open: http://localhost:8000/docs
-
-This shows ALL API endpoints:
-- Projects CRUD
-- Certifications CRUD
-- Skills CRUD
-- Profile Management
-- Applications
-- And more!
-
-Click "Authorize" and enter your token to test!
-
-# ===================================================================
-# WHAT WAS IMPLEMENTED
-# ===================================================================
-
-✅ PostgreSQL Database with 4 tables
-✅ 30+ API Endpoints (all CRUD operations)
-✅ JWT Authentication with Role-Based Access
-✅ Projects, Certifications, Skills Management
-✅ Profile Management with Photo Upload
-✅ Docker with PostgreSQL + MinIO + Backend + Frontend
-✅ 5000+ Lines of Documentation
-✅ Zero Frontend Design Changes
-✅ All Data Dynamically From Database
-
-# ===================================================================
-# KEY FEATURES
-# ===================================================================
-
-Projects CRUD
-  Create → List → Get → Update → Delete
-
-Certifications CRUD
-  Create → List → Get → Update → Delete
-
-Skills CRUD (LinkedIn-Style)
-  Create → List → Get → Update → Delete
-  Proficiency Levels: Beginner, Intermediate, Advanced, Expert
-
-Profile Management
-  Photo Upload
-  Verified Fields (Read-only)
-  Editable Details (Phone, LinkedIn, GitHub, Portfolio)
-
-All data persists in database and survives refresh!
-
-# ===================================================================
-# DOCUMENTATION (Read in This Order)
-# ===================================================================
-
-1. IMPLEMENTATION_COMPLETE.md        ← Overview
-2. BACKEND_IMPLEMENTATION_SUMMARY.md ← What was done
-3. BACKEND_SETUP.md                 ← Setup guide
-4. DEVELOPER_REFERENCE.md           ← API details
-5. VERIFICATION_CHECKLIST.md        ← Verify setup
-6. COMMANDS.md                      ← Command reference
-
-# ===================================================================
-# TROUBLESHOOTING
-# ===================================================================
-
-Services Not Starting?
-  → docker-compose logs
-  → Check if ports 8000, 3000, 5432 are free
-
-Can't Login?
-  → Use: student@example.com / Student@123
-  → Check: docker-compose ps (all should be "Up")
-
-Data Not Persisting?
-  → Check: docker-compose logs postgres
-  → Verify: You see project in list after refresh
-  → Query database: psql -h localhost -U campushire -d campushire_db
-
-API Docs (Swagger) Not Loading?
-  → Open: http://localhost:8000/docs
-  → Check: docker-compose logs backend
-
-# ===================================================================
-# IMPORTANT NOTES
-# ===================================================================
-
-✅ NO FRONTEND DESIGN CHANGES
-   Your frontend looks exactly the same!
-   Just now has a real database backend.
-
-✅ ALL DATA DYNAMIC
-   Every field, every list is pulled from database.
-   Nothing is hardcoded anymore.
-
-✅ ROLE-BASED AUTH
-   Different users see different data.
-   Access control enforced on backend.
-
-✅ PRODUCTION READY
-   Can deploy as-is.
-   Just update .env and SECRET_KEY.
-
-# ===================================================================
-# NEXT STEPS
-# ===================================================================
-
-1. Run: docker-compose up --build
-2. Wait for services to start
-3. Visit: http://localhost:3000
-4. Login: student@example.com / Student@123
-5. Create a project and refresh page
-6. See it persist in database! ✅
-7. Check API docs at: http://localhost:8000/docs
-
-# ===================================================================
-# YOU'RE DONE! 🎉
-# ===================================================================
-
-Your backend is complete, working, and ready to use!
-
-All CRUD operations for projects, certifications, and skills 
-are now fully integrated with a PostgreSQL database.
-
-No frontend changes needed - everything just works!
-
-Enjoy your fully functional CampusHire platform! 🚀
-
-# ===================================================================
-# SUPPORT
-# ===================================================================
-
-Questions? Check:
-→ http://localhost:8000/docs (API Documentation)
-→ BACKEND_SETUP.md (Setup Guide)
-→ DEVELOPER_REFERENCE.md (API Details)
-→ COMMANDS.md (Useful Commands)
-
-Happy coding! 💻
-"""
+Demo login:
+  Student:   student@example.com / student123
+  TPO:       tpo@example.com / tpo123
+  Recruiter: recruiter@example.com / recruiter123
