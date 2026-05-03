@@ -156,6 +156,22 @@ const StudentJobListings = () => {
   const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString();
   const parseLpa = (ctc) => Number(ctc.replace(' LPA', ''));
 
+  const extractJobMetadata = (description) => {
+    if (!description) return { plainDescription: '', metadata: {} };
+    
+    const metaMatch = description.match(/<!--META:\s*({.*})\s*-->$/);
+    if (metaMatch) {
+      try {
+        const plainDescription = description.replace(/<!--META:.*-->$/, '').trim();
+        const metadata = JSON.parse(metaMatch[1]);
+        return { plainDescription, metadata };
+      } catch (e) {
+        return { plainDescription: description, metadata: {} };
+      }
+    }
+    return { plainDescription: description, metadata: {} };
+  };
+
   const companyOptions = useMemo(
     () => [...new Set(jobs.map((job) => job.company))],
     [jobs]
@@ -418,31 +434,24 @@ const StudentJobListings = () => {
               <span className="ctc-badge">{job.ctc}</span>
             </div>
 
-            <p className="job-summary">{job.description}</p>
-
-            <div className="job-meta">
-              <div className="meta-item">
-                <span className="meta-label">Location</span>
-                <span className="meta-value">{job.locations.join(', ')}</span>
+            <div className="job-quick-details">
+              <div className="detail-row">
+                <span className="detail-label">📍 Locations:</span>
+                <span className="detail-value">{job.locations?.join(', ') || 'TBD'}</span>
               </div>
-              <div className="meta-item">
-                <span className="meta-label">Deadline</span>
-                <span className="meta-value">{formatDate(job.deadline)}</span>
+              <div className="detail-row">
+                <span className="detail-label">⏰ Deadline:</span>
+                <span className="detail-value">{formatDate(job.deadline)}</span>
               </div>
-              <div className="meta-item">
-                <span className="meta-label">Min CGPA</span>
-                <span className="meta-value">{job.minCGPA}</span>
+              <div className="detail-row">
+                <span className="detail-label">📊 Min CGPA:</span>
+                <span className="detail-value">{job.minCGPA}</span>
               </div>
-            </div>
-
-            <div className="job-chips">
-              {job.skills.slice(0, 2).map((skill) => (
-                <span key={skill} className="chip">
-                  {skill}
-                </span>
-              ))}
-              {job.skills.length > 2 && (
-                <span className="chip chip-muted">+{job.skills.length - 2} more</span>
+              {job.skills?.length > 0 && (
+                <div className="detail-row">
+                  <span className="detail-label">🛠️ Skills:</span>
+                  <span className="detail-value">{job.skills.slice(0, 3).join(', ')}{job.skills.length > 3 ? '...' : ''}</span>
+                </div>
               )}
             </div>
 
@@ -496,7 +505,32 @@ const StudentJobListings = () => {
               <>
                 <div className="modal-section">
                   <h4>Job Summary</h4>
-                  <p>{selectedJob.description}</p>
+                  {(() => {
+                    const { plainDescription, metadata } = extractJobMetadata(selectedJob.description);
+                    return (
+                      <>
+                        <p>{plainDescription || 'No description available'}</p>
+                        {metadata.openings && (
+                          <div className="job-details-grid">
+                            <div className="detail-item">
+                              <span className="detail-label">Openings</span>
+                              <span className="detail-value">{metadata.openings}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Salary</span>
+                              <span className="detail-value">{selectedJob.ctc}</span>
+                            </div>
+                            {metadata.bondDurationMonths > 0 && (
+                              <div className="detail-item">
+                                <span className="detail-label">Bond Duration</span>
+                                <span className="detail-value">{metadata.bondDurationMonths} months</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="criteria-grid">
@@ -516,32 +550,68 @@ const StudentJobListings = () => {
 
                 <div className="modal-section">
                   <h4>Bond Agreement</h4>
-                  <p>
-                    {selectedJob.bondAgreement.required
-                      ? `Required (${selectedJob.bondAgreement.durationMonths} months)`
-                      : 'Not required'}
-                  </p>
-                  <p>{selectedJob.bondAgreement.details}</p>
+                  {(() => {
+                    const { metadata } = extractJobMetadata(selectedJob.description);
+                    return (
+                      <>
+                        <p>
+                          {metadata.bondDurationMonths > 0
+                            ? `Required (${metadata.bondDurationMonths} months)`
+                            : 'Not required'}
+                        </p>
+                        <p>{metadata.bondDetails || 'No bond details available.'}</p>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="modal-section">
                   <h4>Selection Process</h4>
-                  <ol className="process-list">
-                    {selectedJob.selectionProcess.map((step) => (
-                      <li key={step}>{step}</li>
-                    ))}
-                  </ol>
+                  {(() => {
+                    const { metadata } = extractJobMetadata(selectedJob.description);
+                    const rounds = metadata.roundSchedule || [];
+                    return rounds.length > 0 ? (
+                      <ol className="process-list">
+                        {rounds.map((round, idx) => (
+                          <li key={idx}>
+                            {round.name} - {round.date} at {round.time} ({round.mode})
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p>Selection process details will be shared by TPO.</p>
+                    );
+                  })()}
                 </div>
 
                 <div className="modal-section">
                   <h4>Required PDFs & Documents</h4>
                   <div className="required-docs-list">
-                    {selectedJob.documents.map((doc) => (
-                      <a key={doc.label} href={doc.url} target="_blank" rel="noreferrer" className="required-doc-item">
-                        <span>{doc.label}</span>
-                        <strong>{doc.type}</strong>
-                      </a>
-                    ))}
+                    {(() => {
+                      const { metadata } = extractJobMetadata(selectedJob.description);
+                      const requiredDocs = metadata.requiredDocuments || selectedJob.documents || [];
+                      return requiredDocs.length > 0 ? (
+                        requiredDocs.map((doc, idx) => {
+                          const url = doc.url || '#';
+                          const label = doc.label || doc;
+                          return (
+                            <a 
+                              key={idx} 
+                              href={url} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="required-doc-item"
+                              title={url !== '#' ? 'Click to open PDF' : 'Document link not available'}
+                            >
+                              <span className="doc-label-text">📄 {label}</span>
+                              <span className="doc-type-badge">PDF</span>
+                            </a>
+                          );
+                        })
+                      ) : (
+                        <p className="no-docs-message">No documents specified for this job.</p>
+                      );
+                    })()}
                   </div>
                 </div>
 

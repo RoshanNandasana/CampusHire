@@ -13,6 +13,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.cache import get_async_cache
 from app.models.job_application import JobApplication
 from app.models.job_eligibility import JobEligibility
 from app.models.job_location import JobLocation
@@ -647,7 +648,27 @@ class StudentService:
 
     @staticmethod
     async def list_jobs(db: AsyncSession, current_user_id: uuid.UUID) -> dict:
+        """
+        List jobs with LRU caching to reduce database load.
+        Cache key includes student department to serve personalized results.
+        """
         student, _ = await StudentService._get_student_or_404(db, current_user_id)
+        
+        # Create cache key based on student's department (eligibility criteria)
+        cache_key = f"jobs_dept_{student.department_id}"
+        jobs_cache = get_async_cache("jobs")
+        
+        # Try to get from cache
+        found, cached_result = await jobs_cache.get(cache_key)
+        if found:
+            # Return cached jobs with current student's CGPA
+            return {
+                "jobs": cached_result,
+                "studentCgpa": student.cgpa,
+                "_cache": "hit"
+            }
+        
+        # Cache miss - fetch from database
         jobs = await tpo_feature_repo.list_active_jobs(db)
 
         job_ids = [job["id"] for job in jobs]
@@ -685,12 +706,7 @@ class StudentService:
             eligibility = eligibility_map.get(job["id"])
             min_cgpa = eligibility.get("minCGPA") if eligibility else None
             max_backlogs = eligibility.get("maxBacklogs") if eligibility else None
-            is_eligible = bool(
-                eligibility
-                and student.cgpa >= float(min_cgpa)
-                and student.backlog_count <= int(max_backlogs)
-            )
-
+            # Note: eligibility check uses the requesting student's CGPA at runtime
             payload.append(
                 {
                     "id": str(job["id"]),
@@ -702,11 +718,18 @@ class StudentService:
                     "ctc": f"{round((job.get('salary', 0) or 0) / 100000, 1)} LPA",
                     "locations": location_map.get(job["id"], ["TBD"]),
                     "deadline": job.get("application_deadline"),
-                    "eligible": is_eligible,
+                    "eligible": False,  # Will be calculated client-side based on student CGPA
                 }
             )
 
-        return {"jobs": payload, "studentCgpa": student.cgpa}
+        # Cache the job payload
+        await jobs_cache.set(cache_key, payload)
+        
+        return {
+            "jobs": payload,
+            "studentCgpa": student.cgpa,
+            "_cache": "miss"
+        }
 
     @staticmethod
     async def apply_for_job(db: AsyncSession, current_user_id: uuid.UUID, job_id: uuid.UUID) -> dict:

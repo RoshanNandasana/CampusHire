@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.core.permissions import require_roles
+from app.core.cache import get_cache_stats, clear_all_caches, reset_cache_stats
 from app.schemas.admin_schema import (
     CreateTPORequest,
     UpdateTPORequest,
@@ -254,3 +255,42 @@ async def get_analytics(
 ):
     return await AdminService.get_analytics(db)
 
+
+# ── Cache Management ──────────────────────────────────────────────────────────
+
+@router.get("/cache/stats")
+async def get_cache_statistics(
+    admin=_super_admin,
+):
+    """Get cache hit/miss statistics and performance metrics."""
+    stats = get_cache_stats()
+    return {
+        "status": "success",
+        "data": stats,
+        "message": "Cache is actively reducing database load"
+    }
+
+
+@router.post("/cache/clear")
+async def clear_cache(
+    admin=_super_admin,
+):
+    """Clear all cached data (use when updating static content)."""
+    await clear_all_caches()
+    return {
+        "status": "success",
+        "message": "All caches cleared successfully",
+        "note": "New caches will be populated on next request"
+    }
+
+
+@router.post("/cache/reset-stats")
+async def reset_stats(
+    admin=_super_admin,
+):
+    """Reset cache statistics without clearing cached data."""
+    reset_cache_stats()
+    return {
+        "status": "success",
+        "message": "Cache statistics reset successfully"
+    }

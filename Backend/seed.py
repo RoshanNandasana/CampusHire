@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 import asyncio
 import importlib
+import os
 import pkgutil
 import uuid
+from pathlib import Path
 
 import app.models as models_pkg
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import select
 
-from app.core.db import SessionLocal, engine
+from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models.base import Base
 from app.models.company import Company
@@ -16,6 +20,9 @@ from app.models.roles import Role
 from app.models.students import Student
 from app.models.tpo_coordinator import TPOCoordinator
 from app.models.user import User
+
+
+BASE_DIR = Path(__file__).resolve().parent
 
 
 def _import_all_models() -> None:
@@ -45,7 +52,7 @@ async def _ensure_department(db, name: str = "Computer Science") -> Department:
     return dept
 
 
-async def _upsert_user(db, *, email: str, password: str, role_id) -> User:
+async def _ensure_user(db, *, email: str, password: str, role_id) -> User:
     row = await db.execute(select(User).where(User.email == email))
     user = row.scalar_one_or_none()
     if not user:
@@ -61,12 +68,17 @@ async def _upsert_user(db, *, email: str, password: str, role_id) -> User:
         await db.flush()
         return user
 
-    user.password_hash = hash_password(password)
-    user.role_id = role_id
-    user.is_active = True
-    user.must_change_password = False
     await db.flush()
     return user
+
+
+async def _ensure_super_admin(db, role: Role) -> User:
+    return await _ensure_user(
+        db,
+        email="admin@campushire.com",
+        password="Admin@1234",
+        role_id=role.id,
+    )
 
 
 async def _ensure_student_profile(db, user: User, dept: Department) -> None:
@@ -138,35 +150,47 @@ async def _ensure_tpo_profile(db, user: User, dept: Department) -> None:
     await db.flush()
 
 
-async def main() -> None:
+def _upgrade_database() -> None:
+    alembic_cfg = Config(str(BASE_DIR / "alembic.ini"))
+    database_url = os.getenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://campushire:campushire@localhost:5432/campushire_db",
+    )
+    sync_url = database_url.replace("+asyncpg", "+psycopg2")
+    alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
+    command.upgrade(alembic_cfg, "head")
+
+
+async def seed_database() -> None:
     _import_all_models()
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("✓ Tables created")
+    _upgrade_database()
+    print("✓ Database schema upgraded")
 
     async with SessionLocal() as db:
+        super_admin_role = await _ensure_role(db, "SUPER_ADMIN")
         student_role = await _ensure_role(db, "STUDENT")
         company_role = await _ensure_role(db, "COMPANY")
         tpo_role = await _ensure_role(db, "TPO")
         await _ensure_role(db, "RECRUITER")
-        await _ensure_role(db, "ADMIN")
 
         dept = await _ensure_department(db)
 
-        student_user = await _upsert_user(
+        await _ensure_super_admin(db, super_admin_role)
+
+        student_user = await _ensure_user(
             db,
             email="student@example.com",
             password="student123",
             role_id=student_role.id,
         )
-        recruiter_user = await _upsert_user(
+        recruiter_user = await _ensure_user(
             db,
             email="recruiter@example.com",
             password="recruiter123",
             role_id=company_role.id,
         )
-        tpo_user = await _upsert_user(
+        tpo_user = await _ensure_user(
             db,
             email="tpo@example.com",
             password="tpo123",
@@ -180,9 +204,14 @@ async def main() -> None:
         await db.commit()
 
     print("✓ Seed complete")
+    print("✓ Super Admin: admin@campushire.com / Admin@1234")
     print("✓ Student   : student@example.com / student123")
     print("✓ Recruiter : recruiter@example.com / recruiter123")
     print("✓ TPO       : tpo@example.com / tpo123")
+
+
+async def main() -> None:
+    await seed_database()
 
 
 if __name__ == "__main__":

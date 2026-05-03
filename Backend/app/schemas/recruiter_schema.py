@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class RecruiterPostJobRequest(BaseModel):
@@ -26,6 +27,37 @@ class RecruiterPostJobRequest(BaseModel):
     bondDetails: str = "No bond required."
     requiredDocuments: list[str] = Field(default_factory=list)
     rounds: list[dict] = Field(default_factory=list)
+
+    @field_validator('deadline', 'driveDate')
+    @classmethod
+    def validate_dates(cls, v):
+        try:
+            datetime.fromisoformat(v)
+            return v
+        except (ValueError, TypeError):
+            raise ValueError('Must be a valid ISO format date string')
+
+    @field_validator('deadline')
+    @classmethod
+    def validate_deadline(cls, v, info):
+        try:
+            deadline = datetime.fromisoformat(v)
+            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            if deadline < today:
+                raise ValueError('Application deadline cannot be before today')
+            
+            # Check if driveDate exists in the data
+            if 'driveDate' in info.data:
+                drive_date = datetime.fromisoformat(info.data['driveDate'])
+                if deadline > drive_date:
+                    raise ValueError('Application deadline cannot be after the drive date')
+            
+            return v
+        except ValueError as e:
+            if 'cannot be' in str(e):
+                raise
+            raise ValueError('Invalid date format')
 
 
 class RecruiterApplicationStatusUpdateRequest(BaseModel):

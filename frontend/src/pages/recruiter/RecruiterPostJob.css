@@ -59,6 +59,17 @@
   font-weight: 600;
 }
 
+.error-message {
+  margin: 0.3rem 0 0;
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
 .job-form {
   display: flex;
   flex-direction: column;

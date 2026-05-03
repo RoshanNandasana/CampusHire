@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import hash_password
+from app.core.cache import get_async_cache
 from app.models.user import User
 from app.models.jobs import Job
 from app.models.job_eligibility import JobEligibility
@@ -372,9 +373,28 @@ class TPOService:
 
     @staticmethod
     async def list_active_jobs(db: AsyncSession, current_user_id: uuid.UUID) -> dict:
+        """
+        List active jobs with LRU caching to reduce database load.
+        Cache key includes department ID for department-specific results.
+        """
         department_id = await TPOService._get_department_id_or_404(db, current_user_id)
+        
+        # Create cache key based on department
+        cache_key = f"tpo_jobs_dept_{department_id}"
+        jobs_cache = get_async_cache("jobs")
+        
+        # Try to get from cache
+        found, cached_result = await jobs_cache.get(cache_key)
+        if found:
+            return {"jobs": cached_result, "_cache": "hit"}
+        
+        # Cache miss - fetch from database
         jobs = await tpo_feature_repo.list_active_jobs_for_department(db, department_id)
-        return {"jobs": jobs}
+        
+        # Cache the result
+        await jobs_cache.set(cache_key, jobs)
+        
+        return {"jobs": jobs, "_cache": "miss"}
 
     @staticmethod
     async def update_job_approval_status(

@@ -29,6 +29,7 @@ from app.models.students import Student
 from app.models.user import User
 from app.core.config import settings
 from app.storage import minio_client
+from app.services.email_service import EmailService
 
 
 class RecruiterService:
@@ -159,6 +160,14 @@ class RecruiterService:
         except ValueError as exc:
             raise HTTPException(422, "driveDate and deadline must be valid ISO date values") from exc
 
+        # Validate deadline constraints
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        if deadline < today:
+            raise HTTPException(422, "deadline: Application deadline cannot be before today")
+        
+        if deadline > drive_date:
+            raise HTTPException(422, "deadline: Application deadline cannot be after the drive date")
+
         target_departments = await RecruiterService._resolve_target_departments(db, data.department_id)
         if data.department_id:
             await RecruiterService._ensure_active_tpo_for_departments(db, target_departments)
@@ -222,6 +231,66 @@ class RecruiterService:
             db.add(InterviewRound(job_id=job.id, name=round_name, round_order=index))
 
         await db.commit()
+
+        # Send email notifications to eligible students
+        try:
+            department_ids = [dept.id for dept in target_departments]
+            
+            # Query eligible students from target departments with CGPA >= job requirement
+            eligible_students_query = select(Student.user_id, User.email, User.id).join(
+                User, User.id == Student.user_id
+            ).where(
+                Student.department_id.in_(department_ids),
+                Student.cgpa >= data.minCGPA,
+                Student.backlog_count <= 99,
+                User.is_active.is_(True)
+            )
+            
+            result = await db.execute(eligible_students_query)
+            eligible_students_rows = result.all()
+            
+            # Query job location
+            location_query = select(JobLocation.location).where(JobLocation.job_id == job.id)
+            location_result = await db.execute(location_query)
+            location = location_result.scalar_one_or_none() or data.location
+            
+            # Prepare eligible students list for bulk notification
+            eligible_students = []
+            for user_id, email, _ in eligible_students_rows:
+                # Get student name from User profile
+                user_query = select(User).where(User.id == user_id)
+                user_result = await db.execute(user_query)
+                user = user_result.scalar_one_or_none()
+                if user:
+                    # Extract name from email or use email as fallback
+                    name = user.email.split('@')[0].replace('.', ' ').title() if user.email else "Student"
+                    eligible_students.append({
+                        "email": email,
+                        "name": name,
+                        "user_id": str(user_id)
+                    })
+            
+            if eligible_students:
+                # Send bulk emails in background
+                import asyncio
+                asyncio.create_task(
+                    EmailService.send_bulk_job_notification(
+                        job_id=str(job.id),
+                        job_title=data.title,
+                        company_name=company.name,
+                        job_description=data.description,
+                        salary_lpa=float(data.salaryLpa),
+                        application_deadline=deadline.strftime("%Y-%m-%d"),
+                        job_location=location,
+                        eligible_students=eligible_students,
+                    )
+                )
+        except Exception as e:
+            # Log email sending errors but don't fail the job posting
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send job notification emails for job {job.id}: {str(e)}")
+
         return {
             "message": "Job request submitted to TPO",
             "jobId": str(job.id),
@@ -555,7 +624,7 @@ class RecruiterService:
         if not data:
             raise HTTPException(404, "Application not found")
 
-        application, _ = data
+        application, job = data
         offer_row = await db.execute(select(Offer).where(Offer.application_id == application.id))
         offer = offer_row.scalar_one_or_none()
         normalized_status = (status or "PENDING").upper()
@@ -575,6 +644,41 @@ class RecruiterService:
 
         application.status = "OFFERED"
         await db.commit()
+
+        # Send offer notification email to student
+        try:
+            student_row = await db.execute(
+                select(Student).where(Student.id == application.student_id)
+            )
+            student = student_row.scalar_one_or_none()
+            
+            if student:
+                user_row = await db.execute(
+                    select(User).where(User.id == student.user_id)
+                )
+                user = user_row.scalar_one_or_none()
+                
+                if user and user.email:
+                    student_name = user.email.split("@")[0].replace(".", " ").title()
+                    
+                    # Send offer email in background
+                    import asyncio
+                    asyncio.create_task(
+                        EmailService.send_offer_notification_email(
+                            recipient_email=user.email,
+                            student_name=student_name,
+                            job_title=job.title,
+                            company_name=company.name,
+                            salary_lpa=salary_lpa,
+                            offer_status=normalized_status,
+                        )
+                    )
+        except Exception as e:
+            # Log email sending errors but don't fail the offer creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send offer notification email for application {application_id}: {str(e)}")
+
         return {"message": "Offer saved", "offerId": str(offer.id)}
 
     @staticmethod

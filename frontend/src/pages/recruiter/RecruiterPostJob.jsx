@@ -25,6 +25,7 @@ const RecruiterPostJob = () => {
   const [departments, setDepartments] = useState([]);
   const [requiredDocuments, setRequiredDocuments] = useState(DEFAULT_DOCUMENTS);
   const [rounds, setRounds] = useState([emptyRound()]);
+  const [deadlineError, setDeadlineError] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -70,6 +71,47 @@ const RecruiterPostJob = () => {
 
   const updateRound = (index, key, value) => {
     setRounds((prev) => prev.map((round, i) => (i === index ? { ...round, [key]: value } : round)));
+  };
+
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  const validateDeadline = (deadline, driveDate) => {
+    if (!deadline) {
+      setDeadlineError('');
+      return true;
+    }
+
+    const today = new Date(getTodayDate());
+    const deadlineDate = new Date(deadline);
+    const driveDateObj = new Date(driveDate);
+
+    if (deadlineDate < today) {
+      setDeadlineError('Application deadline cannot be before today.');
+      return false;
+    }
+
+    if (driveDate && deadlineDate > driveDateObj) {
+      setDeadlineError('Application deadline cannot be after the drive date.');
+      return false;
+    }
+
+    setDeadlineError('');
+    return true;
+  };
+
+  const handleDeadlineChange = (e) => {
+    const deadline = e.target.value;
+    setFormData({ ...formData, deadline });
+    validateDeadline(deadline, formData.driveDate);
+  };
+
+  const handleDriveDateChange = (e) => {
+    const driveDate = e.target.value;
+    setFormData({ ...formData, driveDate });
+    validateDeadline(formData.deadline, driveDate);
   };
 
   const resetForm = () => {
@@ -124,6 +166,11 @@ const RecruiterPostJob = () => {
 
     if (!requiredDocuments.length) {
       setMessage('Select at least one required student document.');
+      return;
+    }
+
+    if (!validateDeadline(formData.deadline, formData.driveDate)) {
+      setMessage('Please fix the application deadline issues before submitting.');
       return;
     }
 
@@ -271,7 +318,8 @@ const RecruiterPostJob = () => {
               <input
                 type="date"
                 value={formData.driveDate}
-                onChange={(e) => setFormData({ ...formData, driveDate: e.target.value })}
+                onChange={handleDriveDateChange}
+                min={getTodayDate()}
                 className="form-input"
                 required
               />
@@ -282,10 +330,13 @@ const RecruiterPostJob = () => {
               <input
                 type="date"
                 value={formData.deadline}
-                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                onChange={handleDeadlineChange}
+                min={getTodayDate()}
+                max={formData.driveDate}
                 className="form-input"
                 required
               />
+              {deadlineError && <p className="error-message">{deadlineError}</p>}
             </div>
 
             <div className="form-group">

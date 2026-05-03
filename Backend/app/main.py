@@ -14,6 +14,7 @@ for _, _module_name, _ in pkgutil.iter_modules(_models_pkg.__path__):
 from app.api.v1.router import router
 from app.storage import minio_client
 from app.core.config import settings
+from seed import seed_database
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ app.include_router(router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
-    """Ensure MinIO is ready and required buckets exist on startup."""
+    """Ensure MinIO, tables, and seed data are ready on startup."""
     logger.info("Starting up... Checking MinIO health")
     max_retries = 10
     retry_count = 0
@@ -59,7 +60,7 @@ async def startup_event():
             # Check if MinIO is accessible and create bucket if needed
             minio_client.ensure_bucket(settings.minio_bucket_materials)
             logger.info(f"✅ MinIO is healthy and bucket '{settings.minio_bucket_materials}' is ready")
-            return
+            break
         except Exception as e:
             retry_count += 1
             if retry_count < max_retries:
@@ -69,3 +70,24 @@ async def startup_event():
             else:
                 logger.error(f"❌ MinIO failed to become healthy after {max_retries} attempts. File serving will fail.")
                 # Don't raise - let the server start anyway with degraded file serving
+
+    logger.info("Starting database bootstrap and seed check")
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            await seed_database()
+            logger.info("✅ Database schema and seed data are ready")
+            return
+        except Exception as e:
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.warning(
+                    f"Database seed failed (attempt {retry_count}/{max_retries}): {e}. Retrying..."
+                )
+                import asyncio
+
+                await asyncio.sleep(1)
+            else:
+                logger.error(
+                    f"❌ Database seed failed after {max_retries} attempts. The API may start without demo data: {e}"
+                )
