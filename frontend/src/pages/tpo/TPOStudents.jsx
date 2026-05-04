@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import Modal from '../../components/common/Modal';
 import { tpoAPI } from '../../services/api';
+import { extractArray, getApiErrorMessage } from './tpoUtils';
 import './TPOStudents.css';
 
 const STATUS_ORDER = {
@@ -37,7 +38,7 @@ const TPOStudents = () => {
       setLoading(true);
       try {
         const response = await tpoAPI.getApplications();
-        const items = Array.isArray(response?.data?.applications) ? response.data.applications : [];
+        const items = extractArray(response, ['applications']);
         if (!isMounted) return;
 
         const countsByStudent = items.reduce((acc, item) => {
@@ -69,7 +70,7 @@ const TPOStudents = () => {
       } catch (error) {
         if (!isMounted) return;
         setApplicationRows([]);
-        setUiMessage('Unable to load student applications right now.');
+        setUiMessage(getApiErrorMessage(error, 'Unable to load student applications right now.'));
       } finally {
         if (isMounted) setLoading(false);
       }

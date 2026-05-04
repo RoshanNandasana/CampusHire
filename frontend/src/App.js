@@ -36,6 +36,15 @@ import RecruiterJobs from './pages/recruiter/RecruiterJobs';
 import RecruiterApplicants from './pages/recruiter/RecruiterApplicants';
 import RecruiterOffers from './pages/recruiter/RecruiterOffers';
 
+// Super Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ManageTPOs from './pages/admin/ManageTPOs';
+import ManageCompanies from './pages/admin/ManageCompanies';
+import ManageDepartments from './pages/admin/ManageDepartments';
+import ManageCycles from './pages/admin/ManageCycles';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminConfig from './pages/admin/AdminConfig';
+
 // Styles
 import './App.css';
 import './styles/global.css';
@@ -81,6 +90,15 @@ function AppShell() {
               <Route path="/recruiter/jobs" element={<ProtectedRoute requiredRole="recruiter"><RecruiterJobs /></ProtectedRoute>} />
               <Route path="/recruiter/applicants" element={<ProtectedRoute requiredRole="recruiter"><RecruiterApplicants /></ProtectedRoute>} />
               <Route path="/recruiter/offers" element={<ProtectedRoute requiredRole="recruiter"><RecruiterOffers /></ProtectedRoute>} />
+
+              {/* Super Admin Routes */}
+              <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="super_admin"><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/tpos" element={<ProtectedRoute requiredRole="super_admin"><ManageTPOs /></ProtectedRoute>} />
+              <Route path="/admin/companies" element={<ProtectedRoute requiredRole="super_admin"><ManageCompanies /></ProtectedRoute>} />
+              <Route path="/admin/departments" element={<ProtectedRoute requiredRole="super_admin"><ManageDepartments /></ProtectedRoute>} />
+              <Route path="/admin/cycles" element={<ProtectedRoute requiredRole="super_admin"><ManageCycles /></ProtectedRoute>} />
+              <Route path="/admin/analytics" element={<ProtectedRoute requiredRole="super_admin"><AdminAnalytics /></ProtectedRoute>} />
+              <Route path="/admin/config" element={<ProtectedRoute requiredRole="super_admin"><AdminConfig /></ProtectedRoute>} />
 
               {/* Redirect to login by default */}
               <Route path="/" element={isAuthenticated ? <Navigate to={`/${user?.role}/dashboard`} replace /> : <Navigate to="/login" replace />} />

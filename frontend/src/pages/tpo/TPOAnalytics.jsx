@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import { useAuth } from '../../context/AuthContext';
 import { tpoAPI } from '../../services/api';
+import { extractArray, getApiErrorMessage, unwrapApiData } from './tpoUtils';
 import './TPOAnalytics.css';
 
 const TPOAnalytics = () => {
@@ -19,6 +20,7 @@ const TPOAnalytics = () => {
   const [averageCtcLpa, setAverageCtcLpa] = useState(0);
   const [assignedBranch, setAssignedBranch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const toLpa = (value) => {
     const numeric = Number(value || 0);
@@ -32,13 +34,14 @@ const TPOAnalytics = () => {
     const loadAnalytics = async () => {
       try {
         setIsLoading(true);
+        setError('');
         const [analyticsResponse, jobsResponse] = await Promise.all([
           tpoAPI.getAnalytics(),
           tpoAPI.getJobs(),
         ]);
 
-        const data = analyticsResponse?.data || {};
-        const jobs = Array.isArray(jobsResponse?.data?.jobs) ? jobsResponse.data.jobs : [];
+        const data = unwrapApiData(analyticsResponse);
+        const jobs = extractArray(jobsResponse, ['jobs']);
         if (!isMounted) return;
 
         const jobStatsByCompany = jobs.reduce((acc, job) => {
@@ -89,6 +92,7 @@ const TPOAnalytics = () => {
         setAverageCtcLpa(toLpa(data.placement_stats?.avg_ctc));
       } catch (error) {
         if (!isMounted) return;
+        setError(getApiErrorMessage(error, 'Unable to load analytics data.'));
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -153,6 +157,8 @@ const TPOAnalytics = () => {
           </p>
         </div>
       </section>
+
+      {error && <div className="alert alert-error">{error}</div>}
 
       <div className="analytics-summary-grid">
         <Card className="summary-card green">

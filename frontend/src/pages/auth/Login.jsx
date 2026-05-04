@@ -30,22 +30,30 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(email, password);
-      const authData = response?.data;
-      if (!authData?.access_token || !authData?.role) {
-        throw new Error('Invalid login response');
+      
+      // Handle both direct response and wrapped response
+      let authData = response?.data;
+      if (!authData && response) {
+        authData = response;
+      }
+      
+      if (!authData?.access_token) {
+        throw new Error('Invalid login response: missing access token');
       }
 
       const user = {
-        id: authData.user_id,
+        id: authData.user_id || authData.id,
         email: authData.email,
-        name: authData.email?.split('@')?.[0] || 'user',
+        name: authData.email?.split('@')?.[0] || 'User',
         role: String(authData.role || '').toLowerCase(),
         token: authData.access_token,
-        refreshToken: authData.refresh_token,
+        access_token: authData.access_token,
+        refreshToken: authData.refresh_token || authData.refresh_token,
         studentId: authData.student_id,
         departmentId: authData.department_id,
         companyId: authData.company_id,
         companyName: authData.company_name,
+        last_login: new Date().toISOString(),
       };
 
       login(user);
@@ -54,9 +62,15 @@ const Login = () => {
       if (user.role === 'student') navigate('/student/dashboard');
       else if (user.role === 'tpo') navigate('/tpo/dashboard');
       else if (user.role === 'recruiter') navigate('/recruiter/dashboard');
-      else navigate('/login');
+      else if (user.role === 'super_admin') navigate('/admin/dashboard');
+      else {
+        console.warn('Unknown role:', user.role);
+        navigate('/login');
+      }
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Invalid email or password');
+      console.error('Login error:', err);
+      const errorMsg = err?.response?.data?.detail || err?.message || 'Invalid email or password';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

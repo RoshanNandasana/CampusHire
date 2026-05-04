@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
 import { tpoAPI } from '../../services/api';
+import { extractArray, getApiErrorMessage, unwrapApiData } from './tpoUtils';
 import './TPODashboard.css';
 
 const TPODashboard = () => {
@@ -87,6 +88,8 @@ const TPODashboard = () => {
     'Approve 3 pending document corrections',
     'Finalize attendance for aptitude test',
   ]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const statusClass = (status) => {
     if (status === 'Offer') return 'status-pill offer';
@@ -100,6 +103,8 @@ const TPODashboard = () => {
 
     const loadDashboard = async () => {
       try {
+        setIsLoading(true);
+        setError('');
         const [dashboardResponse, jobsResponse, applicationsResponse] = await Promise.all([
           tpoAPI.getDashboard(),
           tpoAPI.getJobs(),
@@ -107,15 +112,14 @@ const TPODashboard = () => {
         ]);
         if (!isMounted) return;
 
-        const stats = dashboardResponse?.data?.stats || {};
-        const apps = Array.isArray(applicationsResponse?.data?.applications)
-          ? applicationsResponse.data.applications
-          : [];
-        const jobs = Array.isArray(jobsResponse?.data?.jobs) ? jobsResponse.data.jobs : [];
+        const dashboard = unwrapApiData(dashboardResponse);
+        const stats = dashboard?.stats || {};
+        const apps = extractArray(applicationsResponse, ['applications']);
+        const jobs = extractArray(jobsResponse, ['jobs']);
 
         setClassData((prev) => ({
           ...prev,
-          totalStudents: stats.totalStudents || 0,
+          totalStudents: stats.totalStudents || prev.totalStudents,
           studentsApplied: apps.length,
           companiesVisited: new Set(apps.map((item) => item.company)).size,
           activeDrives: jobs.length,
@@ -151,6 +155,9 @@ const TPODashboard = () => {
         ]);
       } catch (error) {
         if (!isMounted) return;
+        setError(getApiErrorMessage(error, 'Unable to load TPO dashboard data.'));
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -172,6 +179,9 @@ const TPODashboard = () => {
           </p>
         </div>
       </section>
+
+      {error && <div className="alert alert-error">{error}</div>}
+      {isLoading && <div className="alert alert-success">Loading dashboard data...</div>}
 
       <div className="tpo-stats-grid">
         <Card className="tpo-stat-card tone-blue">

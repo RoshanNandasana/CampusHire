@@ -13,8 +13,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/login" replace />;
+  if (requiredRole) {
+    // Normalize both role and requiredRole for comparison
+    const userRole = user?.role ? user.role.toLowerCase() : '';
+    const normalizedRequiredRole = requiredRole.toLowerCase();
+    
+    if (userRole !== normalizedRequiredRole) {
+      return <Navigate to="/login" replace />;
+    }
   }
 
   return children;

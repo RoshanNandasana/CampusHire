@@ -1,4 +1,6 @@
-.modal-overlay {
+/* Backdrop/Overlay - Support both naming conventions */
+.modal-overlay,
+.modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -14,9 +16,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: var(--surface-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-strong);
+  background-color: var(--surface-strong, #ffffff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-strong, 0 20px 60px rgba(0, 0, 0, 0.15));
   z-index: 1000;
   max-width: 500px;
   width: 90%;
@@ -24,6 +26,19 @@
   overflow-y: auto;
   overflow-x: hidden;
   animation: slideUp 0.3s ease;
+}
+
+/* Modal size variants */
+.modal-small {
+  max-width: 350px;
+}
+
+.modal-medium {
+  max-width: 500px;
+}
+
+.modal-large {
+  max-width: 700px;
 }
 
 @keyframes fadeIn {

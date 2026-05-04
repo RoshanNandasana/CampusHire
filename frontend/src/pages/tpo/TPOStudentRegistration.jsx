@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Card from '../../components/common/Card';
 import { tpoAPI } from '../../services/api';
+import { extractArray, getApiErrorMessage } from './tpoUtils';
 import './TPOStudentRegistration.css';
 
 const defaultSingleForm = {
@@ -24,24 +25,7 @@ const TPOStudentRegistration = () => {
   const [students, setStudents] = useState([]);
 
   const formatApiError = (error, fallback) => {
-    const detail = error?.response?.data?.detail;
-    if (!detail) return fallback;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map((item) => {
-          if (typeof item === 'string') return item;
-          if (item && typeof item === 'object') {
-            return item.msg || item.error || JSON.stringify(item);
-          }
-          return String(item);
-        })
-        .join(' | ');
-    }
-    if (typeof detail === 'object') {
-      return detail.msg || detail.error || JSON.stringify(detail);
-    }
-    return fallback;
+    return getApiErrorMessage(error, fallback);
   };
 
   const normalizeText = (value, fallback = '-') => {
@@ -59,10 +43,11 @@ const TPOStudentRegistration = () => {
   const loadStudents = async () => {
     try {
       const response = await tpoAPI.getStudents();
-      const items = Array.isArray(response?.data?.students) ? response.data.students : [];
+      const items = extractArray(response, ['students']);
       setStudents(items);
     } catch (error) {
       setStudents([]);
+      setMessage(getApiErrorMessage(error, 'Unable to load students right now.'));
     }
   };
 

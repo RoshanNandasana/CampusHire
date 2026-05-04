@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import { tpoAPI } from '../../services/api';
+import { extractArray, getApiErrorMessage } from './tpoUtils';
 import './TPOJobs.css';
 const formatDate = (value) => {
   if (!value) return '-';
@@ -27,13 +28,14 @@ const TPOJobs = () => {
 
   const loadJobs = async () => {
     setLoading(true);
+    setFeedbackMessage('');
     try {
       const response = await tpoAPI.getJobs();
-      const items = Array.isArray(response?.data?.jobs) ? response.data.jobs : [];
+      const items = extractArray(response, ['jobs']);
       setJobs(items);
     } catch (error) {
       setJobs([]);
-      setFeedbackMessage('Unable to load jobs right now.');
+      setFeedbackMessage(getApiErrorMessage(error, 'Unable to load jobs right now.'));
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,7 @@ const TPOJobs = () => {
           : 'Job status updated successfully.'
       );
     } catch (error) {
-      setFeedbackMessage(error?.response?.data?.detail || 'Unable to update job status right now.');
+      setFeedbackMessage(getApiErrorMessage(error, 'Unable to update job status right now.'));
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../../components/common/Card';
 import { tpoAPI } from '../../services/api';
 import fileDownloadService from '../../services/fileDownloadService';
+import { extractArray, getApiErrorMessage } from './tpoUtils';
 import './TPOMaterials.css';
 
 const categoryMap = {
@@ -31,10 +32,10 @@ const TPOMaterials = () => {
     setLoading(true);
     try {
       const response = await tpoAPI.listMaterials();
-      setMaterials(Array.isArray(response?.data?.materials) ? response.data.materials : []);
+      setMaterials(extractArray(response, ['materials']));
     } catch (error) {
       setMaterials([]);
-      setMessage('Unable to load materials.');
+      setMessage(getApiErrorMessage(error, 'Unable to load materials.'));
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ const TPOMaterials = () => {
       setMessage('Material uploaded successfully. Students can now see it.');
       await loadMaterials();
     } catch (error) {
-      setMessage(error?.response?.data?.detail || 'Unable to upload material right now.');
+      setMessage(getApiErrorMessage(error, 'Unable to upload material right now.'));
     }
   };
 
@@ -114,7 +115,7 @@ const TPOMaterials = () => {
       setMaterials((prev) => prev.filter((item) => String(item.id) !== String(id)));
       setMessage('Material removed successfully.');
     } catch (error) {
-      setMessage(error?.response?.data?.detail || 'Unable to remove material.');
+      setMessage(getApiErrorMessage(error, 'Unable to remove material.'));
     }
   };
 

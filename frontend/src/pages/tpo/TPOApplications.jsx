@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import Card from '../../components/common/Card';
 import { tpoAPI } from '../../services/api';
+import { extractArray, getApiErrorMessage } from './tpoUtils';
 import './TPOApplications.css';
 
 const TPOApplications = () => {
@@ -92,6 +93,7 @@ const TPOApplications = () => {
     branch: 'all',
     sort: 'latest',
   });
+  const [uiMessage, setUiMessage] = React.useState('');
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -155,8 +157,8 @@ const TPOApplications = () => {
     const loadApplications = async () => {
       try {
         const response = await tpoAPI.getApplications();
-        const items = response?.data?.applications;
-        if (!isMounted || !Array.isArray(items)) return;
+        const items = extractArray(response, ['applications']);
+        if (!isMounted) return;
 
         const mapped = items.map((item, index) => ({
           id: item.id || `APP-${index + 1}`,
@@ -175,6 +177,7 @@ const TPOApplications = () => {
         setApplications(mapped);
       } catch (error) {
         if (!isMounted) return;
+        setUiMessage(getApiErrorMessage(error, 'Unable to load applications right now.'));
       }
     };
 
@@ -190,6 +193,8 @@ const TPOApplications = () => {
         <h1>Application Tracking</h1>
         <p>Monitor all student applications and statuses</p>
       </div>
+
+      {uiMessage && <p className="notify-banner">{uiMessage}</p>}
 
       <div className="summary-grid">
         <Card className="summary-card summary-total">

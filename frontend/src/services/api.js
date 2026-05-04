@@ -170,5 +170,55 @@ export const recruiterAPI = {
   api: api,
 };
 
+// Super Admin APIs
+export const adminAPI = {
+  // TPO Coordinators
+  createTPO: (tpoData) => api.post('/admin/tpos', tpoData),
+  getTPOs: () => api.get('/admin/tpos'),
+  updateTPO: (tpoId, tpoData) => api.put(`/admin/tpos/${tpoId}`, tpoData),
+
+  // Companies
+  createCompany: (companyData) => api.post('/admin/companies', companyData),
+  getCompanies: () => api.get('/admin/companies'),
+  updateCompany: (companyId, companyData) => api.put(`/admin/companies/${companyId}`, companyData),
+
+  // Departments
+  createDepartment: (deptData) => api.post('/admin/departments', deptData),
+  getDepartments: () => api.get('/admin/departments'),
+  updateDepartment: (deptId, deptData) => api.put(`/admin/departments/${deptId}`, deptData),
+  deleteDepartment: (deptId) => api.delete(`/admin/departments/${deptId}`),
+
+  // Placement Cycles
+  createCycle: (cycleData) => api.post('/admin/cycles', cycleData),
+  getCycles: () => api.get('/admin/cycles'),
+  activateCycle: (cycleId) => api.post(`/admin/cycles/${cycleId}/activate`),
+  closeCycle: (cycleId) => api.post(`/admin/cycles/${cycleId}/close`),
+  enrollDepartment: (cycleId, enrollData) => api.post(`/admin/cycles/${cycleId}/enroll-department`, enrollData),
+  getEnrollments: (cycleId) => api.get(`/admin/cycles/${cycleId}/enrollments`),
+
+  // User Management
+  deactivateUser: (userId) => api.post(`/admin/users/${userId}/deactivate`),
+  resetPassword: (passwordData) => api.post('/admin/users/reset-password', passwordData),
+
+  // Offers Management
+  overrideOffer: (offerId, overrideData) => api.post(`/admin/offers/${offerId}/override`, overrideData),
+
+  // System Configuration
+  getSystemConfig: () => api.get('/admin/system-config'),
+  updateSystemConfig: (configData) => api.put('/admin/system-config', configData),
+
+  // Audit Logs
+  getAuditLogs: (limit = 100, offset = 0) => 
+    api.get('/admin/audit-logs', { params: { limit, offset } }),
+
+  // Analytics
+  getAnalytics: () => api.get('/admin/analytics'),
+
+  // Cache Management
+  getCacheStats: () => api.get('/admin/cache/stats'),
+  clearCache: () => api.post('/admin/cache/clear'),
+  resetCacheStats: () => api.post('/admin/cache/reset-stats'),
+};
+
 export default api;
 export { api };

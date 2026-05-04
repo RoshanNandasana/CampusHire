@@ -20,12 +20,15 @@ const Navbar = () => {
     if (role === 'student') return '/student/dashboard';
     if (role === 'tpo') return '/tpo/dashboard';
     if (role === 'recruiter') return '/recruiter/dashboard';
+    if (role === 'super_admin') return '/admin/dashboard';
     return '/';
   };
 
   const getRoleProfilePath = () => {
     if (role === 'student') return '/student/profile';
     if (role === 'tpo') return '/tpo/students';
+    if (role === 'recruiter') return '/recruiter/dashboard';
+    if (role === 'super_admin') return '/admin/dashboard';
     return '/recruiter/dashboard';
   };
 

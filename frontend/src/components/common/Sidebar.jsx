@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   MdDashboard, MdPerson, MdWork, MdAssignment, MdInsights,
   MdSchool, MdPeople, MdAnalytics, MdAdd, MdMenuBook,
-  MdCardGiftcard
+  MdCardGiftcard, MdLocationCity, MdSettings, MdEvent
 } from 'react-icons/md';
 import './Sidebar.css';
 
@@ -45,6 +45,18 @@ const Sidebar = () => {
         { label: 'My Jobs', path: '/recruiter/jobs', icon: MdWork },
         { label: 'Applicants', path: '/recruiter/applicants', icon: MdPeople },
         { label: 'Offers', path: '/recruiter/offers', icon: MdCardGiftcard },
+      ];
+    }
+
+    if (role === 'super_admin') {
+      return [
+        { label: 'Dashboard', path: '/admin/dashboard', icon: MdDashboard },
+        { label: 'TPO Coordinators', path: '/admin/tpos', icon: MdPeople },
+        { label: 'Companies', path: '/admin/companies', icon: MdLocationCity },
+        { label: 'Departments', path: '/admin/departments', icon: MdSchool },
+        { label: 'Placement Cycles', path: '/admin/cycles', icon: MdEvent },
+        { label: 'Analytics', path: '/admin/analytics', icon: MdAnalytics },
+        { label: 'System Config', path: '/admin/config', icon: MdSettings },
       ];
     }
 

@@ -1,0 +1,10 @@
+@import './ManageTPOs.css';
+
+.manage-companies {
+  /* Inherits all styles from ManageTPOs */
+}
+
+textarea.form-input {
+  font-family: inherit;
+  resize: vertical;
+}

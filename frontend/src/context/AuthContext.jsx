@@ -32,12 +32,14 @@ export const AuthProvider = ({ children }) => {
     setUser(normalized);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(normalized));
+    localStorage.setItem('token', userData.token || userData.access_token || '');
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
   const register = (userData) => {
@@ -45,6 +47,7 @@ export const AuthProvider = ({ children }) => {
     setUser(normalized);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(normalized));
+    localStorage.setItem('token', userData.token || userData.access_token || '');
   };
 
   return (
