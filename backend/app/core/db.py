@@ -15,7 +15,12 @@ DATABASE_URL = os.getenv(
 	"postgresql+asyncpg://campushire:campushire@localhost:5432/campushire_db",
 )
 
-engine = create_async_engine(DATABASE_URL, future=True, echo=False)
+# Neon (and any remote PostgreSQL) requires SSL.
+# asyncpg does not pick up sslmode from the URL — pass it via connect_args instead.
+_is_remote = not any(h in DATABASE_URL for h in ("localhost", "127.0.0.1"))
+_connect_args = {"ssl": True} if _is_remote else {}
+
+engine = create_async_engine(DATABASE_URL, future=True, echo=False, connect_args=_connect_args)
 SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 

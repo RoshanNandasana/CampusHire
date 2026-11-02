@@ -156,9 +156,16 @@ def _upgrade_database() -> None:
         "DATABASE_URL",
         "postgresql+asyncpg://campushire:campushire@localhost:5432/campushire_db",
     )
+    # Alembic uses psycopg2 (sync); swap the driver.
     sync_url = database_url.replace("+asyncpg", "+psycopg2")
+    # psycopg2 needs sslmode=require in the URL for remote hosts (e.g. Neon).
+    is_remote = not any(h in sync_url for h in ("localhost", "127.0.0.1"))
+    if is_remote and "sslmode" not in sync_url:
+        sep = "&" if "?" in sync_url else "?"
+        sync_url = f"{sync_url}{sep}sslmode=require"
     alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
     command.upgrade(alembic_cfg, "head")
+
 
 
 async def seed_database() -> None:
