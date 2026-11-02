@@ -16,78 +16,18 @@ const TPODashboard = () => {
   }, [user]);
 
   const [classData, setClassData] = useState({
-    totalStudents: 72,
-    studentsApplied: 58,
-    companiesVisited: 14,
-    activeDrives: 6,
-    offersReleased: 21,
+    totalStudents: 0,
+    studentsApplied: 0,
+    companiesVisited: 0,
+    activeDrives: 0,
+    offersReleased: 0,
   });
 
-  const [recentApplications, setRecentApplications] = useState([
-    {
-      student: 'Rahul Mehta',
-      rollNo: 'CSEA-041',
-      company: 'Google',
-      role: 'Software Engineer',
-      status: 'Shortlisted',
-      date: '2026-03-18',
-    },
-    {
-      student: 'Aditi Shah',
-      rollNo: 'CSEA-052',
-      company: 'Microsoft',
-      role: 'Product Analyst',
-      status: 'Applied',
-      date: '2026-03-17',
-    },
-    {
-      student: 'Karan Patel',
-      rollNo: 'CSEA-034',
-      company: 'TCS',
-      role: 'Systems Engineer',
-      status: 'Offer',
-      date: '2026-03-16',
-    },
-    {
-      student: 'Nidhi Verma',
-      rollNo: 'CSEA-063',
-      company: 'Amazon',
-      role: 'Data Engineer',
-      status: 'Interview',
-      date: '2026-03-15',
-    },
-  ]);
+  const [recentApplications, setRecentApplications] = useState([]);
 
-  const [companyDrives, setCompanyDrives] = useState([
-    {
-      company: 'Google',
-      role: 'Software Engineer',
-      date: '2026-03-25',
-      minCgpa: 7.5,
-      registered: 36,
-    },
-    {
-      company: 'Microsoft',
-      role: 'Product Analyst',
-      date: '2026-03-27',
-      minCgpa: 7.0,
-      registered: 28,
-    },
-    {
-      company: 'Amazon',
-      role: 'Data Engineer',
-      date: '2026-03-29',
-      minCgpa: 6.5,
-      registered: 24,
-    },
-  ]);
+  const [companyDrives, setCompanyDrives] = useState([]);
 
-  const [pendingTasks, setPendingTasks] = useState([
-    'Verify 9 student profiles before next drive',
-    'Share interview slot list for Google drive',
-    'Approve 3 pending document corrections',
-    'Finalize attendance for aptitude test',
-  ]);
+  const [pendingTasks, setPendingTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 

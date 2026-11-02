@@ -2,7 +2,7 @@
 
 A full-stack campus placement platform connecting **students**, **TPO coordinators**, and **recruiters** — built as a modern MERN-style Python/React project.
 
-> **Live demo:** coming soon on Vercel + Render
+> 🚀 **Live demo:** [campus-hire-henna.vercel.app](https://campus-hire-henna.vercel.app)
 
 ---
 

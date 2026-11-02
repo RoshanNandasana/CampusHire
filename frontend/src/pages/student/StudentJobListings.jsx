@@ -6,107 +6,6 @@ import { studentAPI } from '../../services/api';
 import './StudentJobListings.css';
 
 
-const DEFAULT_JOBS = [
-  {
-    id: 1,
-    company: 'Google',
-    position: 'Software Engineer',
-    description: 'Looking for talented software engineers to join our team.',
-    minCGPA: 7.5,
-    skills: ['Python', 'JavaScript', 'DSA'],
-    ctc: '20 LPA',
-    eligible: true,
-    locations: ['Bangalore', 'Hyderabad'],
-    deadline: '2026-04-20',
-    bondAgreement: {
-      required: true,
-      durationMonths: 12,
-      details: 'One-year service bond with early exit fee as per company policy.',
-    },
-    selectionProcess: ['Online assessment', 'Technical interviews', 'HR interview'],
-    documents: [
-      { label: 'Role Description PDF', url: '#', type: 'PDF' },
-      { label: 'Bond Agreement PDF', url: '#', type: 'PDF' },
-      { label: 'Eligibility Rules PDF', url: '#', type: 'PDF' },
-    ],
-    tpoNote: 'Approved by TPO for 2026 CSE batch. Carry updated resume and transcript.',
-    tpoCoordinator: 'Dr. R. Sharma',
-  },
-  {
-    id: 2,
-    company: 'Microsoft',
-    position: 'Product Manager',
-    description: 'Seeking product managers for cloud and enterprise solutions.',
-    minCGPA: 7.0,
-    skills: ['Analytics', 'Communication', 'Leadership'],
-    ctc: '18 LPA',
-    eligible: true,
-    locations: ['Pune'],
-    deadline: '2026-04-18',
-    bondAgreement: {
-      required: false,
-      durationMonths: 0,
-      details: 'No service bond required.',
-    },
-    selectionProcess: ['Case study', 'Panel interview', 'HR interview'],
-    documents: [
-      { label: 'Job Description PDF', url: '#', type: 'PDF' },
-      { label: 'Interview Process PDF', url: '#', type: 'PDF' },
-    ],
-    tpoNote: 'Open for students with product case-study completion certificate.',
-    tpoCoordinator: 'Prof. Neha Soni',
-  },
-  {
-    id: 3,
-    company: 'Amazon',
-    position: 'Data Engineer',
-    description: 'Help build scalable data solutions at Amazon.',
-    minCGPA: 6.5,
-    skills: ['SQL', 'Python', 'Spark'],
-    ctc: '16 LPA',
-    eligible: true,
-    locations: ['Bangalore'],
-    deadline: '2026-04-24',
-    bondAgreement: {
-      required: true,
-      durationMonths: 18,
-      details: '18-month bond with relocation terms as per offer letter.',
-    },
-    selectionProcess: ['Coding test', 'Technical interviews', 'HR interview'],
-    documents: [
-      { label: 'Role Description PDF', url: '#', type: 'PDF' },
-      { label: 'Bond Terms PDF', url: '#', type: 'PDF' },
-      { label: 'Data Engineer Round Guide PDF', url: '#', type: 'PDF' },
-    ],
-    tpoNote: 'Interview prep workshop mandatory before shortlist release.',
-    tpoCoordinator: 'Dr. R. Sharma',
-  },
-  {
-    id: 4,
-    company: 'TCS',
-    position: 'Systems Engineer',
-    description: 'Join our global IT services team.',
-    minCGPA: 6.0,
-    skills: ['Java', 'SQL', 'OOPS'],
-    ctc: '8 LPA',
-    eligible: true,
-    locations: ['Multiple'],
-    deadline: '2026-04-14',
-    bondAgreement: {
-      required: true,
-      durationMonths: 24,
-      details: 'Two-year service bond with training recovery clause.',
-    },
-    selectionProcess: ['Aptitude test', 'Technical interview', 'HR interview'],
-    documents: [
-      { label: 'Service Bond PDF', url: '#', type: 'PDF' },
-      { label: 'Role Overview PDF', url: '#', type: 'PDF' },
-    ],
-    tpoNote: 'Mass recruiter drive. Document verification by TPO is required first.',
-    tpoCoordinator: 'Prof. Rahul Desai',
-  },
-];
-
 const StudentJobListings = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [modalStep, setModalStep] = useState('details');
@@ -119,34 +18,35 @@ const StudentJobListings = () => {
     minCtc: 0,
   });
 
-  const [jobs, setJobs] = useState(DEFAULT_JOBS);
+  const [jobs, setJobs] = useState([]);
+
   const [appliedJobIds, setAppliedJobIds] = useState(new Set());
 
   const [studentCgpa, setStudentCgpa] = useState(8.2);
 
   const [applyDraft, setApplyDraft] = useState({
-    fullName: 'John Doe',
-    collegeEmail: 'john.doe@college.edu',
-    phone: '+91 98765 43210',
-    cgpa: '8.2',
-    resumeFile: 'john_doe_resume.pdf',
-    tenthMarksheetFile: 'class_10_marksheet.pdf',
-    twelfthMarksheetFile: 'class_12_marksheet.pdf',
-    graduationMarksheetFile: 'latest_sem_marksheet.pdf',
+    fullName: '',
+    collegeEmail: '',
+    phone: '',
+    cgpa: '',
+    resumeFile: '',
+    tenthMarksheetFile: '',
+    twelfthMarksheetFile: '',
+    graduationMarksheetFile: '',
     note: '',
     declarationAccepted: false,
   });
 
   const profileDefaults = useMemo(
     () => ({
-      fullName: 'John Doe',
-      collegeEmail: 'john.doe@college.edu',
-      phone: '+91 98765 43210',
-      cgpa: '8.2',
-      resumeFile: 'john_doe_resume.pdf',
-      tenthMarksheetFile: 'class_10_marksheet.pdf',
-      twelfthMarksheetFile: 'class_12_marksheet.pdf',
-      graduationMarksheetFile: 'latest_sem_marksheet.pdf',
+      fullName: '',
+      collegeEmail: '',
+      phone: '',
+      cgpa: '',
+      resumeFile: '',
+      tenthMarksheetFile: '',
+      twelfthMarksheetFile: '',
+      graduationMarksheetFile: '',
       note: '',
       declarationAccepted: false,
     }),

@@ -22,26 +22,8 @@ const TPOEligibility = () => {
     policyNotes: '',
   });
 
-  const [companyRules, setCompanyRules] = useState([
-    {
-      id: 1,
-      companyName: 'Google',
-      minCGPA: 7.5,
-      maxOffersPerStudent: 1,
-      allowedBranches: ['CSE', 'ECE'],
-      effectiveFrom: '2026-03-01',
-      policyNotes: 'No active backlogs allowed. Must clear OA before interview rounds.',
-    },
-    {
-      id: 2,
-      companyName: 'TCS',
-      minCGPA: 6.0,
-      maxOffersPerStudent: 2,
-      allowedBranches: ['CSE', 'ECE', 'ME', 'CIVIL'],
-      effectiveFrom: '2026-02-15',
-      policyNotes: 'Service agreement may apply as per offer. Department verification mandatory.',
-    },
-  ]);
+  const [companyRules, setCompanyRules] = useState([]);
+
 
   const policyCount = companyRules.length;
   const strictestCgpa = Math.max(

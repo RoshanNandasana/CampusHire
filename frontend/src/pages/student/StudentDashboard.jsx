@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
 import { studentAPI } from '../../services/api';
 import './StudentDashboard.css';
 
 const StudentDashboard = () => {
+  const { user } = useAuth();
+
   const [stats, setStats] = useState({
     applied: 0,
     pending: 0,
@@ -15,21 +18,13 @@ const StudentDashboard = () => {
   const [recentApplications, setRecentApplications] = useState([]);
   const [upcomingPlacementTasks, setUpcomingPlacementTasks] = useState([]);
   const [loadError, setLoadError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const statusBadgeClass = (status) => {
-    switch (status) {
-      case 'applied':
-        return 'badge badge-info';
-      case 'pending':
-        return 'badge badge-warning';
-      case 'shortlisted':
-        return 'badge badge-success';
-      case 'rejected':
-        return 'badge badge-danger';
-      default:
-        return 'badge badge-secondary';
-    }
-  };
+  const displayName = useMemo(() => {
+    if (user?.name) return user.name;
+    if (user?.email) return user.email.split('@')[0];
+    return 'Student';
+  }, [user]);
 
   const todayISO = useMemo(() => {
     const now = new Date();
@@ -39,14 +34,21 @@ const StudentDashboard = () => {
     return `${y}-${m}-${d}`;
   }, []);
 
-  const getNotificationState = (taskDate) => {
-    if (taskDate === todayISO) {
-      return { label: 'Notification Sent Today', className: 'notify today' };
+  const statusPillClass = (status) => {
+    switch (status) {
+      case 'applied':    return 'sdash-pill sdash-pill--blue';
+      case 'pending':    return 'sdash-pill sdash-pill--amber';
+      case 'shortlisted':return 'sdash-pill sdash-pill--violet';
+      case 'rejected':   return 'sdash-pill sdash-pill--red';
+      case 'offer':      return 'sdash-pill sdash-pill--green';
+      default:           return 'sdash-pill sdash-pill--blue';
     }
-    if (taskDate > todayISO) {
-      return { label: 'Notification Scheduled', className: 'notify scheduled' };
-    }
-    return { label: 'Task Completed', className: 'notify completed' };
+  };
+
+  const getTaskState = (taskDate) => {
+    if (taskDate === todayISO) return { label: 'Today', cls: 'sdash-pill sdash-pill--amber' };
+    if (taskDate > todayISO)   return { label: 'Scheduled', cls: 'sdash-pill sdash-pill--violet' };
+    return { label: 'Completed', cls: 'sdash-pill sdash-pill--green' };
   };
 
   useEffect(() => {
@@ -59,13 +61,13 @@ const StudentDashboard = () => {
         if (!isMounted || !data) return;
 
         setStats({
-          applied: Number(data?.stats?.applied || 0),
-          pending: Number(data?.stats?.pending || 0),
-          rejected: Number(data?.stats?.rejected || 0),
-          shortlisted: Number(data?.stats?.shortlisted || 0),
+          applied:       Number(data?.stats?.applied       || 0),
+          pending:       Number(data?.stats?.pending       || 0),
+          rejected:      Number(data?.stats?.rejected      || 0),
+          shortlisted:   Number(data?.stats?.shortlisted   || 0),
           upcomingTasks: Number(data?.stats?.upcomingTasks || 0),
         });
-        setRecentApplications(Array.isArray(data?.recentApplications) ? data.recentApplications : []);
+        setRecentApplications(Array.isArray(data?.recentApplications)     ? data.recentApplications     : []);
         setUpcomingPlacementTasks(Array.isArray(data?.upcomingPlacementTasks) ? data.upcomingPlacementTasks : []);
       } catch (error) {
         if (!isMounted) return;
@@ -73,125 +75,99 @@ const StudentDashboard = () => {
         setRecentApplications([]);
         setUpcomingPlacementTasks([]);
         setLoadError(error?.response?.data?.detail || 'Unable to load dashboard data right now.');
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
     loadDashboard();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    return () => { isMounted = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const statCards = [
+    { label: 'Applied',        value: stats.applied,       tone: 'tone-blue',   icon: '📄' },
+    { label: 'Pending',        value: stats.pending,       tone: 'tone-amber',  icon: '⏳' },
+    { label: 'Rejected',       value: stats.rejected,      tone: 'tone-red',    icon: '✖' },
+    { label: 'Shortlisted',    value: stats.shortlisted,   tone: 'tone-green',  icon: '✅' },
+    { label: 'Upcoming Tasks', value: stats.upcomingTasks, tone: 'tone-violet', icon: '📅' },
+  ];
 
   return (
-    <div className="student-dashboard">
-      <section className="student-hero-panel simple-hero">
+    <div className="sdash">
+      {/* ── Hero ── */}
+      <section className="sdash-hero">
         <div>
-          <span className="hero-kicker">Placement Dashboard</span>
-          <h1>Welcome back, Student</h1>
-          <p>Simple placement tracking for applications, status, and upcoming tasks.</p>
+          <span className="sdash-kicker">Student Dashboard</span>
+          <h1>Welcome back, {displayName}</h1>
+          <p>Track your applications, placement status, and upcoming tasks in one place.</p>
         </div>
       </section>
 
-      {loadError ? <p className="task-note">{loadError}</p> : null}
+      {loadError  && <div className="sdash-alert sdash-alert--error">{loadError}</div>}
+      {isLoading  && <div className="sdash-alert sdash-alert--info">Loading dashboard…</div>}
 
-      <div className="stats-grid simple-stats-grid">
-        <Card className="stat-card stat-blue">
-          <div className="stat-content">
-            <div className="stat-icon">📄</div>
-            <div className="stat-info">
-              <p className="stat-label">Applied</p>
-              <p className="stat-value">{stats.applied}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="stat-card stat-yellow">
-          <div className="stat-content">
-            <div className="stat-icon">⏳</div>
-            <div className="stat-info">
-              <p className="stat-label">Pending</p>
-              <p className="stat-value">{stats.pending}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="stat-card stat-red">
-          <div className="stat-content">
-            <div className="stat-icon">✖</div>
-            <div className="stat-info">
-              <p className="stat-label">Rejected</p>
-              <p className="stat-value">{stats.rejected}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="stat-card stat-green">
-          <div className="stat-content">
-            <div className="stat-icon">✅</div>
-            <div className="stat-info">
-              <p className="stat-label">Shortlisted</p>
-              <p className="stat-value">{stats.shortlisted}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="stat-card stat-purple">
-          <div className="stat-content">
-            <div className="stat-icon">📅</div>
-            <div className="stat-info">
-              <p className="stat-label">Upcoming Tasks</p>
-              <p className="stat-value">{stats.upcomingTasks}</p>
-            </div>
-          </div>
-        </Card>
+      {/* ── Stats ── */}
+      <div className="sdash-stats-grid">
+        {statCards.map(({ label, value, tone, icon }) => (
+          <Card key={label} className={`sdash-stat-card ${tone}`}>
+            <div className="sdash-stat-icon">{icon}</div>
+            <p className="sdash-stat-label">{label}</p>
+            <h3>{value}</h3>
+          </Card>
+        ))}
       </div>
 
-      <div className="dashboard-content simple-dashboard-content">
-        <div className="section">
-          <Card title="Recent Applications" className="card-shadow">
-            <div className="applications-list">
-              {recentApplications.map((app) => (
-                <div key={app.id} className="application-row">
+      {/* ── Panels ── */}
+      <div className="sdash-main-grid">
+        {/* Recent Applications */}
+        <Card title="Recent Applications" className="sdash-panel-card sdash-panel-card--blue">
+          <div className="sdash-row-list">
+            {recentApplications.length === 0 ? (
+              <p className="sdash-empty">No applications yet. Browse Job Listings to get started.</p>
+            ) : (
+              recentApplications.map((app) => (
+                <div key={app.id} className="sdash-data-row">
                   <div>
                     <h4>{app.company}</h4>
                     <p>{app.position}</p>
+                    <small>{new Date(app.appliedDate).toLocaleDateString()}</small>
                   </div>
-                  <div className="application-meta">
-                    <span>{new Date(app.appliedDate).toLocaleDateString()}</span>
-                    <span className={statusBadgeClass(app.status)}>
+                  <div className="sdash-row-right">
+                    <span className={statusPillClass(app.status)}>
                       {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                     </span>
                   </div>
                 </div>
-              ))}
-              {recentApplications.length === 0 ? <p className="task-note">No applications yet.</p> : null}
-            </div>
-          </Card>
-        </div>
+              ))
+            )}
+          </div>
+        </Card>
 
-        <div className="section">
-          <Card title="Upcoming Placement Tasks" className="card-shadow">
-            <p className="task-note">Notifications are sent on the scheduled task date.</p>
-            <div className="tasks-list">
-              {upcomingPlacementTasks.map((task) => {
-                const notify = getNotificationState(task.date);
+        {/* Upcoming Tasks */}
+        <Card title="Upcoming Placement Tasks" className="sdash-panel-card sdash-panel-card--violet">
+          <p className="sdash-task-note">Notifications are sent on the scheduled task date.</p>
+          <div className="sdash-row-list">
+            {upcomingPlacementTasks.length === 0 ? (
+              <p className="sdash-empty">No upcoming placement tasks at this time.</p>
+            ) : (
+              upcomingPlacementTasks.map((task) => {
+                const notify = getTaskState(task.date);
                 return (
-                  <div key={task.id} className="task-row">
+                  <div key={task.id} className="sdash-data-row">
                     <div>
                       <h4>{task.company}</h4>
                       <p>{task.task}</p>
-                      <small>
-                        {new Date(task.date).toLocaleDateString()} at {task.time}
-                      </small>
+                      <small>{new Date(task.date).toLocaleDateString()} at {task.time}</small>
                     </div>
-                    <span className={notify.className}>{notify.label}</span>
+                    <div className="sdash-row-right">
+                      <span className={notify.cls}>{notify.label}</span>
+                    </div>
                   </div>
                 );
-              })}
-              {upcomingPlacementTasks.length === 0 ? <p className="task-note">No upcoming tasks.</p> : null}
-            </div>
-          </Card>
-        </div>
+              })
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );
