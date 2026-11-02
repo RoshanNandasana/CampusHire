@@ -104,7 +104,9 @@ python-paseto==0.5.2
     # via campushire-backend (backend/pyproject.toml)
 regex==2026.9.29
     # via fastapi-mail
-sqlalchemy==2.1.6
+greenlet==3.2.3
+    # via sqlalchemy[asyncio]
+sqlalchemy[asyncio]==2.1.6
     # via
     #   campushire-backend (backend/pyproject.toml)
     #   alembic
