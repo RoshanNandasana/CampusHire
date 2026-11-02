@@ -174,7 +174,7 @@ const StudentApplications = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="student-applications">

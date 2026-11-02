@@ -34,7 +34,7 @@ const StudentProfile = () => {
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState(''); // eslint-disable-line no-unused-vars
   const [profilePhotoBlobUrl, setProfilePhotoBlobUrl] = useState('');
   const [message, setMessage] = useState('');
   const [modalState, setModalState] = useState({
@@ -286,7 +286,7 @@ const StudentProfile = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return () => {
@@ -869,9 +869,9 @@ const StudentProfile = () => {
                 <span className="file-chip">
                   {record.fileName || 'No file uploaded'}
                   {getDocumentUrl(record) && (
-                    <a onClick={() => handleViewDocument(record)} style={{ cursor: 'pointer' }} className="doc-view-link">
+                    <button type="button" onClick={() => handleViewDocument(record)} className="doc-view-link">
                       View
-                    </a>
+                    </button>
                   )}
                 </span>
               </div>
@@ -1070,9 +1070,9 @@ const StudentProfile = () => {
                 <h4>{document.label}</h4>
                 <p>{document.fileName}</p>
                 {getDocumentUrl(document) && (
-                  <a onClick={() => handleViewDocument(document)} style={{ cursor: 'pointer' }} className="doc-view-link">
+                  <button type="button" onClick={() => handleViewDocument(document)} className="doc-view-link">
                     View Document
-                  </a>
+                  </button>
                 )}
               </div>
               <label htmlFor={`doc-${document.id}`} className="resume-btn resume-btn--upload doc-upload-btn">

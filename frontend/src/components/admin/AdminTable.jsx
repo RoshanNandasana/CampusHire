@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MdEdit, MdDelete, MdMoreVert } from 'react-icons/md';
+import React, { useState } from 'react'; // eslint-disable-line no-unused-vars
+import { MdEdit, MdDelete } from 'react-icons/md';
 import './AdminTable.css';
 
 const AdminTable = ({ 
@@ -10,7 +10,7 @@ const AdminTable = ({
   loading = false, 
   emptyMessage = 'No data available' 
 }) => {
-  const [expandedRow, setExpandedRow] = useState(null);
+  const [expandedRow] = useState(null);
 
   const renderCell = (item, column) => {
     if (column.render) {
