@@ -1,25 +1,25 @@
-# Logs
+# ─── Logs ─────────────────────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Runtime data
+# ─── Runtime data ─────────────────────────────────────────────────────────────
 pids
 *.pid
 *.seed
 *.pid.lock
 
-# Dependencies
+# ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
-Backend/venv/
+backend/venv/
 env/
 venv/
 ENV/
-.venv
+.venv/
 
-# IDE
+# ─── IDE ──────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
@@ -27,20 +27,24 @@ ENV/
 *~
 .DS_Store
 
-# Environment
+# ─── Environment ──────────────────────────────────────────────────────────────
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+# Keep .env.example files tracked
+!.env.example
+!**/.env.example
 
-# Build
+# ─── Build output ─────────────────────────────────────────────────────────────
 build/
 dist/
 .next/
 out/
+.vercel/
 
-# Database
+# ─── Python ───────────────────────────────────────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
@@ -48,35 +52,25 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Cache
+# ─── Cache ────────────────────────────────────────────────────────────────────
 .cache/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.uv/
 
-# Docker
-Dockerfile
-docker-compose.override.yml
-
-# OS
+# ─── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# Testing
+# ─── Test coverage ────────────────────────────────────────────────────────────
 .coverage
 htmlcov/
-.pytest_cache/
 
-# Production
-campushire.db
+# ─── Secrets ──────────────────────────────────────────────────────────────────
 *.pem
 *.key
 *.crt
-
-# Secrets and env files anywhere in repo
-**/.env
-**/.env.*
-!**/.env.example
 *.p12
 *.jks
 *.pfx
